@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Defender of the Temple: Roma Invicta</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Import map for modern Three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- 3D Canvas Container -->
+  <div id="canvas-container">
+    <canvas id="game-canvas"></canvas>
+  </div>
+
+  <!-- Red Screen Flash on Damage -->
+  <div id="damage-vignette"></div>
+
+  <!-- Reticle -->
+  <div id="crosshair">
+    <div class="reticle-brackets"></div>
+    <div class="reticle-dot"></div>
+  </div>
+
+  <!-- Pointer lock instruction prompt -->
+  <div id="pointer-lock-prompt">CLICK TO LOCK CAMERA &bull; ESC TO FREE CURSOR</div>
+
+  <!-- Interactive prompt -->
+  <div id="interaction-prompt">
+    <span class="key-badge" id="prompt-key">E</span>
+    <span id="prompt-text">DROP BOULDER</span>
+  </div>
+
+  <!-- Announcement Banner -->
+  <div id="announcement-banner">
+    <div class="announcement-title" id="announcement-title">WAVE 1</div>
+    <div class="announcement-subtitle" id="announcement-sub">GREEK SKIRMISHERS APPROACH</div>
+  </div>
+
+  <!-- UI HUD Overlay -->
+  <div id="ui-overlay">
+    <!-- Top Header -->
+    <div class="hud-top">
+      <!-- Wall / Gate Health -->
+      <div class="wall-status-container">
+        <div class="wall-status-label">
+          <span>TEMPLE WALL INTEGRITY</span>
+          <span id="wall-hp-text">100%</span>
+        </div>
+        <div class="bar-bg">
+          <div class="bar-fill wall-fill" id="wall-hp-bar" style="width: 100%;"></div>
+        </div>
+        <div class="wall-status-label" style="margin-top: 6px;">
+          <span>CENTRAL GATE INTEGRITY</span>
+          <span id="gate-hp-text">100%</span>
+        </div>
+        <div class="bar-bg">
+          <div class="bar-fill gate-fill" id="gate-hp-bar" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- Center Wave Info -->
+      <div class="hud-top-center">
+        <div class="wave-banner">
+          <div class="wave-title" id="wave-display">WAVE I</div>
+          <div class="enemies-counter" id="enemies-display">ENEMIES: 0 / 0</div>
+        </div>
+      </div>
+
+      <!-- Top Right: Minimap & Sound -->
+      <div class="hud-top-right">
+        <div id="minimap-container">
+          <div class="minimap-marker-n">N</div>
+          <canvas id="minimap-canvas" width="160" height="160"></canvas>
+        </div>
+        <button id="sound-toggle" title="Toggle Sound">🔊 AUDIO ON</button>
+      </div>
+    </div>
+
+    <!-- Bottom HUD -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+      <!-- Player Status (Bottom Left) -->
+      <div class="hud-bottom-left">
+        <div class="player-info-header">
+          <span class="player-title">CENTURION VALERIUS</span>
+          <span class="denarii-count">🪙 <span id="denarii-display">0</span> VALOR</span>
+        </div>
+        <div class="status-row">
+          <label><span>HEALTH</span><span id="player-hp-text">100 / 100</span></label>
+          <div class="bar-bg">
+            <div class="bar-fill hp-fill" id="player-hp-bar" style="width: 100%;"></div>
+          </div>
+        </div>
+        <div class="status-row">
+          <label><span>STAMINA</span><span id="player-stamina-text">100 / 100</span></label>
+          <div class="bar-bg">
+            <div class="bar-fill stamina-fill" id="player-stamina-bar" style="width: 100%;"></div>
+          </div>
+        </div>
+        <div class="ammo-display">
+          <span style="font-size: 11px; color: #ffeb99;">PILA (JAVELINS):</span>
+          <div class="ammo-icons" id="pila-icons">
+            <div class="ammo-javelin"></div>
+            <div class="ammo-javelin"></div>
+            <div class="ammo-javelin"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Command Abilities (Bottom Center) -->
+      <div class="hud-bottom-center">
+        <div class="command-btn" id="cmd-arrows" title="Order Roman Sagittarii to rain fiery arrows">
+          <span class="command-key">1</span>
+          <span class="command-icon">🏹</span>
+          <span class="command-name">ARROW VOLLEY</span>
+          <div class="cooldown-overlay" id="cd-arrows">0</div>
+        </div>
+        <div class="command-btn" id="cmd-testudo" title="Legionaries lock shields and reinforce the gate">
+          <span class="command-key">2</span>
+          <span class="command-icon">🛡️</span>
+          <span class="command-name">TESTUDO WALL</span>
+          <div class="cooldown-overlay" id="cd-testudo">0</div>
+        </div>
+        <div class="command-btn" id="cmd-warcry" title="Centurion War Cry: Boosts speed, stamina and attack power">
+          <span class="command-key">3</span>
+          <span class="command-icon">⚡</span>
+          <span class="command-name">ROMA INVICTA</span>
+          <div class="cooldown-overlay" id="cd-warcry">0</div>
+        </div>
+      </div>
+
+      <!-- Controls Guide (Bottom Right) -->
+      <div class="hud-bottom-right">
+        <div class="controls-title">CENTURION CONTROLS</div>
+        <div class="controls-row"><span>Move:</span><span class="controls-key">W A S D</span></div>
+        <div class="controls-row"><span>Look / Aim:</span><span class="controls-key">Mouse (Click to Lock)</span></div>
+        <div class="controls-row"><span>Gladius Attack:</span><span class="controls-key">Left Mouse Button</span></div>
+        <div class="controls-row"><span>Scutum Block:</span><span class="controls-key">Right Mouse Button</span></div>
+        <div class="controls-row"><span>Throw Pilum:</span><span class="controls-key">Q Key</span></div>
+        <div class="controls-row"><span>Sprint / Dodge:</span><span class="controls-key">Shift / Space</span></div>
+        <div class="controls-row"><span>Interact / Defenses:</span><span class="controls-key">E Key</span></div>
+        <div class="controls-row"><span>Tactical Orders:</span><span class="controls-key">1, 2, 3 Keys</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start Game Modal -->
+  <div class="modal-screen" id="start-modal">
+    <div class="modal-content">
+      <div class="modal-header-ornament">🦅 ⚔️ 🏛️</div>
+      <h1 class="modal-title">TEMPLE DEFENDER</h1>
+      <h2 class="modal-subtitle">ROMA INVICTA &bull; 3RD PERSON BATTLE ACTION</h2>
+      <div class="modal-text">
+        <p>You are <strong>Centurion Valerius</strong> of the Legio IX Hispana. A massive Greek Hellenic expeditionary army has landed on the coast to raze the sacred <strong>Temple of Mars Capitolinus</strong>.</p>
+        <br>
+        <p>Defend the fortress ramparts at all costs! Fight across the battlements and courtyard, kick down enemy siege assault ladders, crush advancing hoplites with boulders, command legionary cohorts, and repel the Greek champions!</p>
+        <br>
+        <p><strong>Victory Conditions:</strong> Survive 5 relentless waves of Greek invaders and safeguard the Temple Gate!</p>
+      </div>
+      <button class="btn-primary" id="start-game-btn">TAKE UP THE GLADIUS</button>
+    </div>
+  </div>
+
+  <!-- Armory / Upgrades Modal (Between Waves) -->
+  <div class="modal-screen" id="upgrade-modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header-ornament">🏛️ 🛡️ 🏛️</div>
+      <h1 class="modal-title">ARMORY OF MARS</h1>
+      <h2 class="modal-subtitle">REINFORCE YOUR DEFENSES BEFORE THE NEXT WAVE</h2>
+      <div style="color: #ffeb99; font-size: 14px; margin-bottom: 12px;">AVAILABLE VALOR: 🪙 <span id="shop-denarii">0</span></div>
+      
+      <div class="upgrades-grid">
+        <div class="upgrade-card">
+          <div class="upgrade-header">
+            <span class="upgrade-title">Damascus Gladius</span>
+            <span class="upgrade-cost">🪙 80</span>
+          </div>
+          <div class="upgrade-desc">Increases melee strike damage and sword attack speed by +25%.</div>
+          <button class="upgrade-btn" id="buy-sword">PURCHASE</button>
+        </div>
+
+        <div class="upgrade-card">
+          <div class="upgrade-header">
+            <span class="upgrade-title">Praetorian Scutum</span>
+            <span class="upgrade-cost">🪙 70</span>
+          </div>
+          <div class="upgrade-desc">Increases shield bash stun duration and expands 100% block angle.</div>
+          <button class="upgrade-btn" id="buy-shield">PURCHASE</button>
+        </div>
+
+        <div class="upgrade-card">
+          <div class="upgrade-header">
+            <span class="upgrade-title">Flaming Pila</span>
+            <span class="upgrade-cost">🪙 90</span>
+          </div>
+          <div class="upgrade-desc">Pilum javelins explode in Greek Fire on impact, damaging clusters of enemies.</div>
+          <button class="upgrade-btn" id="buy-pila">PURCHASE</button>
+        </div>
+
+        <div class="upgrade-card">
+          <div class="upgrade-header">
+            <span class="upgrade-title">Gate & Wall Masonry</span>
+            <span class="upgrade-cost">🪙 60</span>
+          </div>
+          <div class="upgrade-desc">Repairs 50% wall and gate integrity and strengthens gate resistance.</div>
+          <button class="upgrade-btn" id="buy-repairs">PURCHASE</button>
+        </div>
+
+        <div class="upgrade-card">
+          <div class="upgrade-header">
+            <span class="upgrade-title">Roman Sagittarii</span>
+            <span class="upgrade-cost">🪙 100</span>
+          </div>
+          <div class="upgrade-desc">Stations 2 additional Roman archers on the rampart towers.</div>
+          <button class="upgrade-btn" id="buy-archers">PURCHASE</button>
+        </div>
+
+        <div class="upgrade-card">
+          <div class="upgrade-header">
+            <span class="upgrade-title">Endurance Training</span>
+            <span class="upgrade-cost">🪙 50</span>
+          </div>
+          <div class="upgrade-desc">Increases maximum health and stamina regeneration rate.</div>
+          <button class="upgrade-btn" id="buy-health">PURCHASE</button>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="next-wave-btn">SOUND THE BATTLE HORNS (NEXT WAVE)</button>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-screen" id="victory-modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header-ornament">👑 🦅  laurel 🦅 👑</div>
+      <h1 class="modal-title" style="color: #ffd700;">TRIUMPH OF ROME!</h1>
+      <h2 class="modal-subtitle">THE GREEK ARMIES HAVE BEEN CRUSHED!</h2>
+      <div class="modal-text" style="text-align: center;">
+        <p>By the blessings of Jupiter and your indomitable valor, the sacred Temple Wall stood unbroken against the might of Greece!</p>
+        <br>
+        <p style="font-size: 16px; color: var(--roman-gold-bright);">
+          Total Enemies Slain: <strong id="vic-kills">0</strong> &bull; Valor Earned: <strong id="vic-denarii">0</strong>
+        </p>
+        <p style="font-size: 14px; color: #ffcccc; margin-top: 6px;">
+          Temple Wall Final Integrity: <strong id="vic-wall">100%</strong>
+        </p>
+      </div>
+      <button class="btn-primary" id="restart-game-vic-btn">FIGHT AGAIN FOR GLORY</button>
+    </div>
+  </div>
+
+  <!-- Game Over Modal -->
+  <div class="modal-screen" id="gameover-modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header-ornament">☠️ 🏛️ ☠️</div>
+      <h1 class="modal-title" style="color: #e74c3c;">THE TEMPLE HAS FALLEN</h1>
+      <h2 class="modal-subtitle" id="gameover-reason">THE GREEKS BREACHED THE DEFENSES</h2>
+      <div class="modal-text" style="text-align: center;">
+        <p>The Greek invaders overran the battlements. Rome will remember your brave stand beneath the marble columns of the sanctuary.</p>
+        <br>
+        <p style="font-size: 16px; color: #ccc;">
+          Waves Survived: <strong id="go-waves" style="color: var(--roman-gold);">0</strong> &bull; Enemies Defeated: <strong id="go-kills" style="color: #fff;">0</strong>
+        </p>
+      </div>
+      <button class="btn-primary" id="restart-game-btn">RETRY DEFENSE</button>
+    </div>
+  </div>
+
+  <!-- Main Game Script Entrypoint -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
