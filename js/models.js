@@ -9,8 +9,8 @@ export const materials = {
   romanPlate: new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8, roughness: 0.3 }),
   romanGold: new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.7, roughness: 0.35 }),
   romanLeather: new THREE.MeshStandardMaterial({ color: 0x4a2c14, roughness: 0.85 }),
-  scutumRed: new THREE.MeshStandardMaterial({ color: 0x8a1010, roughness: 0.5 }),
-  scutumGold: new THREE.MeshStandardMaterial({ color: 0xf1c40f, metalness: 0.8, roughness: 0.3 }),
+  scutumRed: new THREE.MeshStandardMaterial({ color: 0x8a1010, roughness: 0.5, side: THREE.DoubleSide }),
+  scutumGold: new THREE.MeshStandardMaterial({ color: 0xf1c40f, metalness: 0.8, roughness: 0.3, side: THREE.DoubleSide }),
   capeRed: new THREE.MeshStandardMaterial({ color: 0xb81c1c, roughness: 0.8, side: THREE.DoubleSide }),
   steelBlade: new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.95, roughness: 0.15 }),
   bronzeBoss: new THREE.MeshStandardMaterial({ color: 0xcd7f32, metalness: 0.85, roughness: 0.3 }),
@@ -18,10 +18,10 @@ export const materials = {
 
   // Greek Materials
   greekBronze: new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: 0.8, roughness: 0.35 }),
-  greekShieldBlue: new THREE.MeshStandardMaterial({ color: 0x1a3d6e, roughness: 0.6 }),
+  greekShieldBlue: new THREE.MeshStandardMaterial({ color: 0x1a3d6e, roughness: 0.6, side: THREE.DoubleSide }),
   greekTunicWhite: new THREE.MeshStandardMaterial({ color: 0xe6e6fa, roughness: 0.75 }),
   greekPlumeBlack: new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 }),
-  greekSpartanRed: new THREE.MeshStandardMaterial({ color: 0x7a0c0c, roughness: 0.6 }),
+  greekSpartanRed: new THREE.MeshStandardMaterial({ color: 0x7a0c0c, roughness: 0.6, side: THREE.DoubleSide }),
   greekWood: new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.8 }),
   greekBossGold: new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.85, roughness: 0.2 }),
 
@@ -47,6 +47,13 @@ export function createScutumMesh() {
   body.position.set(0, 0, -0.38); // Apex at z = +0.12, edges curve back to z = -0.04
   body.castShadow = true;
   scutumGroup.add(body);
+
+  // Inner wooden horizontal grip handle for Centurion's hand (visible from behind!)
+  const gripGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.35, 8);
+  const grip = new THREE.Mesh(gripGeo, materials.romanLeather);
+  grip.rotation.z = Math.PI / 2;
+  grip.position.set(0, 0, 0.04);
+  scutumGroup.add(grip);
 
   // Vertical Brass Rims on left & right curved edges
   const rimGeo = new THREE.BoxGeometry(0.04, 1.26, 0.04);
