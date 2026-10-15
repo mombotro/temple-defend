@@ -659,18 +659,23 @@ export class Player {
       if (prog >= 1.0) {
         this.isAttacking = false;
         this.modelData.rightArmGroup.rotation.set(0, 0, 0);
+        this.modelData.leftArmGroup.rotation.set(0, 0, 0);
         this.modelData.rightArmGroup.position.set(-0.35, 1.35, 0);
         this.modelData.leftArmGroup.position.set(0.35, 1.35, 0);
       }
     } else if (this.isBlocking) {
-      // Scutum raised in defensive posture
-      this.modelData.leftArmGroup.position.set(0.18, 1.35, 0.35);
-      this.modelData.leftArmGroup.rotation.set(0.2, 0.5, 0);
+      // Scutum raised directly in front of chest facing forward!
+      this.modelData.leftArmGroup.position.set(0.10, 1.35, 0.35);
+      this.modelData.leftArmGroup.rotation.set(0.1, 0, 0);
     } else {
-      // Return arm poses smoothly
+      // Return arm poses smoothly to sides
       this.modelData.leftArmGroup.position.lerp(new THREE.Vector3(0.35, 1.35, 0), 10 * delta);
       this.modelData.leftArmGroup.rotation.x *= 0.8;
+      this.modelData.leftArmGroup.rotation.y *= 0.8;
+      this.modelData.leftArmGroup.rotation.z *= 0.8;
       this.modelData.rightArmGroup.rotation.x *= 0.8;
+      this.modelData.rightArmGroup.rotation.y *= 0.8;
+      this.modelData.rightArmGroup.rotation.z *= 0.8;
       this.modelData.rightArmGroup.position.lerp(new THREE.Vector3(-0.35, 1.35, 0), 10 * delta);
     }
 

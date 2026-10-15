@@ -41,34 +41,42 @@ export const materials = {
 export function createScutumMesh() {
   const scutumGroup = new THREE.Group();
 
-  // Curved shield body
+  // Curved shield body (Faces forward +Z, curves back towards the arm)
   const bodyGeo = new THREE.CylinderGeometry(0.5, 0.5, 1.25, 16, 1, true, -Math.PI / 3.8, Math.PI / 1.9);
   const body = new THREE.Mesh(bodyGeo, materials.scutumRed);
-  body.rotation.y = Math.PI / 2;
+  body.position.set(0, 0, -0.38); // Apex at z = +0.12, edges curve back to z = -0.04
   body.castShadow = true;
   scutumGroup.add(body);
 
-  // Brass rim
-  const rimGeo = new THREE.BoxGeometry(0.04, 1.28, 0.04);
+  // Vertical Brass Rims on left & right curved edges
+  const rimGeo = new THREE.BoxGeometry(0.04, 1.26, 0.04);
   const rimLeft = new THREE.Mesh(rimGeo, materials.romanGold);
-  rimLeft.position.set(-0.25, 0, 0.12);
+  rimLeft.position.set(-0.36, 0, -0.04);
   const rimRight = new THREE.Mesh(rimGeo, materials.romanGold);
-  rimRight.position.set(0.25, 0, 0.12);
+  rimRight.position.set(0.36, 0, -0.04);
   scutumGroup.add(rimLeft, rimRight);
 
-  // Central Umbo / Brass Boss (Spike/Dome)
+  // Horizontal Brass Rims on top & bottom
+  const hRimGeo = new THREE.BoxGeometry(0.74, 0.04, 0.04);
+  const rimTop = new THREE.Mesh(hRimGeo, materials.romanGold);
+  rimTop.position.set(0, 0.63, 0.04);
+  const rimBottom = new THREE.Mesh(hRimGeo, materials.romanGold);
+  rimBottom.position.set(0, -0.63, 0.04);
+  scutumGroup.add(rimTop, rimBottom);
+
+  // Central Umbo / Brass Boss (Spike/Dome) on shield front
   const bossGeo = new THREE.ConeGeometry(0.12, 0.14, 12);
   const boss = new THREE.Mesh(bossGeo, materials.bronzeBoss);
   boss.rotation.x = Math.PI / 2;
-  boss.position.set(0, 0, 0.22);
+  boss.position.set(0, 0, 0.18);
   scutumGroup.add(boss);
 
   // Golden Eagle Wings / Thunderbolt Insignia on shield face
   const wingGeo = new THREE.BoxGeometry(0.35, 0.08, 0.02);
   const wingTop = new THREE.Mesh(wingGeo, materials.scutumGold);
-  wingTop.position.set(0, 0.32, 0.2);
+  wingTop.position.set(0, 0.32, 0.13);
   const wingBottom = new THREE.Mesh(wingGeo, materials.scutumGold);
-  wingBottom.position.set(0, -0.32, 0.2);
+  wingBottom.position.set(0, -0.32, 0.13);
   scutumGroup.add(wingTop, wingBottom);
 
   return scutumGroup;
