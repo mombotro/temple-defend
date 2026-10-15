@@ -52,9 +52,14 @@ export class CombatSystem {
     const progress = Math.min(1.0, this.player.attackTimer / this.player.attackDuration);
     if (progress < 0.15 || progress > 0.85) return;
 
-    const hitRange = 3.6; // Generous reach for Roman Gladius sword & shield bash
+    const hitRange = 3.8; // Generous reach for Roman Gladius sword & shield bash
     const playerPos = this.player.position;
-    const playerFacing = new THREE.Vector3(-Math.sin(this.player.mesh.rotation.y), 0, -Math.cos(this.player.mesh.rotation.y));
+
+    // Use camera world direction so attacks ALWAYS align with where player aims on screen!
+    const playerFacing = new THREE.Vector3();
+    this.camera.getWorldDirection(playerFacing);
+    playerFacing.y = 0;
+    playerFacing.normalize();
 
     // Base damage based on combo strike
     let baseDamage = 35;
@@ -86,10 +91,12 @@ export class CombatSystem {
       const verticalDiff = Math.abs(toEnemy.y);
 
       // Check distance (both horizontal reach and elevation allowance for ladder climbers)
-      if (horizontalDist <= hitRange && verticalDiff <= 3.2) {
+      if (horizontalDist <= hitRange && verticalDiff <= 3.4) {
         const horizontalDir = new THREE.Vector3(toEnemy.x, 0, toEnemy.z).normalize();
         const dot = playerFacing.dot(horizontalDir);
-        if (dot > 0.22) { // Wide 155-degree swing arc in front of player
+
+        // Hit if enemy is in front of the camera (wide 165-degree sweep) OR close (point-blank)
+        if (dot > 0.12 || horizontalDist <= 1.8) {
           if (this.player.hitEnemiesThisSwing) {
             this.player.hitEnemiesThisSwing.add(enemy);
           }
