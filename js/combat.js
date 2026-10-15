@@ -46,10 +46,13 @@ export class CombatSystem {
 
   // --- 1. PLAYER MELEE HIT DETECTION ---
   checkMeleeHits() {
-    if (!this.player.isAttacking || !this.player.pendingHitCheck) return;
-    this.player.pendingHitCheck = false;
+    if (!this.player.isAttacking) return;
 
-    const hitRange = 2.8;
+    // Check during the active slicing frames of the swing (15% to 85% of duration)
+    const progress = Math.min(1.0, this.player.attackTimer / this.player.attackDuration);
+    if (progress < 0.15 || progress > 0.85) return;
+
+    const hitRange = 3.6; // Generous reach for Roman Gladius sword & shield bash
     const playerPos = this.player.position;
     const playerFacing = new THREE.Vector3(-Math.sin(this.player.mesh.rotation.y), 0, -Math.cos(this.player.mesh.rotation.y));
 
@@ -76,14 +79,21 @@ export class CombatSystem {
     // Check hit against Greek enemies
     this.enemyManager.enemies.forEach(enemy => {
       if (enemy.state === 'dead') return;
+      if (this.player.hitEnemiesThisSwing && this.player.hitEnemiesThisSwing.has(enemy)) return;
 
       const toEnemy = enemy.position.clone().sub(playerPos);
-      const dist = toEnemy.length();
+      const horizontalDist = Math.sqrt(toEnemy.x * toEnemy.x + toEnemy.z * toEnemy.z);
+      const verticalDiff = Math.abs(toEnemy.y);
 
-      // Check distance and frontal cone angle
-      if (dist <= hitRange) {
-        const dot = playerFacing.dot(toEnemy.clone().normalize());
-        if (dot > 0.35) { // In front of player
+      // Check distance (both horizontal reach and elevation allowance for ladder climbers)
+      if (horizontalDist <= hitRange && verticalDiff <= 3.2) {
+        const horizontalDir = new THREE.Vector3(toEnemy.x, 0, toEnemy.z).normalize();
+        const dot = playerFacing.dot(horizontalDir);
+        if (dot > 0.22) { // Wide 155-degree swing arc in front of player
+          if (this.player.hitEnemiesThisSwing) {
+            this.player.hitEnemiesThisSwing.add(enemy);
+          }
+
           this.enemyManager.damageEnemy(enemy, baseDamage, isCrit, playerFacing);
           this.spawnHitSparks(enemy.position.clone().add(new THREE.Vector3(0, 1.2, 0)), isCrit ? 0xffea00 : 0xcc2222);
           this.spawnFloatingText(`-${Math.round(baseDamage)}`, enemy.position, isCrit ? 'text-crit' : 'text-damage');
@@ -99,7 +109,14 @@ export class CombatSystem {
     // Check hit against Battering Rams
     this.enemyManager.batteringRams.forEach(ram => {
       if (ram.isDestroyed) return;
-      if (playerPos.distanceTo(ram.position) < 4.0) {
+      if (this.player.hitEnemiesThisSwing && this.player.hitEnemiesThisSwing.has(ram)) return;
+
+      const toRam = ram.position.clone().sub(playerPos);
+      const horizontalDist = Math.sqrt(toRam.x * toRam.x + toRam.z * toRam.z);
+      if (horizontalDist < 4.8 && Math.abs(toRam.y) < 3.5) {
+        if (this.player.hitEnemiesThisSwing) {
+          this.player.hitEnemiesThisSwing.add(ram);
+        }
         ram.health -= baseDamage;
         this.spawnHitSparks(ram.position.clone().add(new THREE.Vector3(0, 1.5, 0)), 0xff8800);
         soundEngine.playSwordHit();

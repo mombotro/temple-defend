@@ -88,6 +88,7 @@ export class Player {
     this.comboWindow = 0;
     this.isBlocking = false;
     this.isInvulnerable = false;
+    this.hitEnemiesThisSwing = new Set();
 
     // Upgrades
     this.upgrades = {
@@ -212,10 +213,13 @@ export class Player {
     this.attackTimer = 0;
     this.attackDuration = (0.35 / this.upgrades.attackSpeedMult);
 
-    soundEngine.playSwordSwing();
+    // Snap Centurion body to face directly where crosshair is aiming!
+    this.mesh.rotation.y = this.yaw + Math.PI;
 
-    // Check hit immediately on start of swing
-    this.pendingHitCheck = true;
+    // Reset enemies hit for this fresh sword swing
+    this.hitEnemiesThisSwing = new Set();
+
+    soundEngine.playSwordSwing();
 
     // Advance combo
     this.comboIndex = (this.comboIndex + 1) % 3;
@@ -594,6 +598,12 @@ export class Player {
       } else {
         // Idle: update collision in place
         this.applyMovementWithCollision(new THREE.Vector3(0, 0, 0));
+
+        // Always face crosshair when attacking, aiming pilum, or blocking even if standing still!
+        if (this.isBlocking || this.isAimingPilum || this.isAttacking) {
+          this.mesh.rotation.y = this.yaw + Math.PI;
+        }
+
         this.modelData.legLGroup.rotation.x *= 0.8;
         this.modelData.legRGroup.rotation.x *= 0.8;
         const idleWave = Math.sin(Date.now() * 0.0025) * 0.03;
