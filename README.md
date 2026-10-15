@@ -4,7 +4,11 @@
 Defend the sacred **Temple of Mars Capitolinus** against the relentless Hellenic armies of Greece! As **Centurion Valerius** of the Roman Legio IX Hispana, you command the ramparts, wield the steel Gladius, raise the impenetrable Scutum shield, and repel the Greek hoplites, skirmishers, battering rams, and Spartan champions.
 
 > [!NOTE]
-> **Homeschool Project**: This is a homeschool educational project created to study and explore ancient Roman history, classical architecture, and Roman legionary defense tactics against Hellenic Greek forces.
+> **🎓 Homeschool Educational Project**: This is an educational programming project created by an 8-year-old junior game developer as his very first coding project! It blends hands-on computer science (3D graphics, game loops, vector math, collision physics) with ancient Roman and Greek history, classical architecture, and Roman legionary tactics.
+>
+> **Philosophy: Waterproof Baby Steps 🧱**: Building games one small, bug-free piece at a time — test early, test often, and make every piece solid before adding the next!
+>
+> 📖 Check out the [Junior Centurion Game Dev Field Manual](file:///home/mom/Documents/Chuck/JUNIOR_DEV_GUIDE.md) for game design tips, an explanation of the files, and next mission quests!
 
 ---
 
@@ -82,3 +86,23 @@ Then navigate to [http://localhost:8080](http://localhost:8080) in Chrome, Safar
 6. **Procedural Web Audio Engine:**
    - Zero external audio files required — synthesized using the Web Audio API.
    - Roman bucina war horns, metallic sword clashes, shield blocks, war drums, boulder smashes, and triumphant fanfares.
+
+---
+
+## 🎓 Educational Curriculum & Learning Objectives
+
+This project was designed from the ground up as a dual-learning adventure:
+
+1. **Computer Science & Game Engineering (Baby Steps):**
+   - **The Game Loop:** Understanding how games tick 60 times a second (`Update` physics ➔ `Render` graphics).
+   - **3D Coordinates & Vectors:** Understanding X (left/right), Y (up/down), and Z (forward/back) positioning in a 3D world.
+   - **Hitboxes & Collisions:** How the Roman Wall keeps the Centurion from falling through the floor and prevents Greek hoplites from walking through solid stone.
+   - **State Machines:** Managing game phases (`START`, `PLAYING`, `INTERMISSION`, `VICTORY`, `GAMEOVER`).
+   - **Bug Squashing & Waterproof Code:** Learning that the best way to write code is in small, testable baby steps. Never add ten things at once; add one thing, make sure it works, test it, and then build the next!
+
+2. **Classical History & Archaeology:**
+   - **Roman Legionary Armor & Gear:** The *Gladius* (short thrusting sword), *Scutum* (curved rectangular tower shield), and *Pilum* (weighted armor-piercing javelin).
+   - **Greek Hellenic Forces:** Spartan hoplites with bronze cuirasses and $\Lambda$ (Lambda) shields, agile *Peltasts* throwing javelins, and *Toxotai* archers.
+   - **Tactics & Formations:** The famous Roman *Testudo* (tortoise) shield-wall formation used to protect soldiers from arrow volleys and battering rams.
+   - **Classical Temple Architecture:** Marble porticos, fluted columns, pediments, and braziers dedicated to Mars (the Roman god of war).
+
