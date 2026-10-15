@@ -61,7 +61,7 @@ export class Player {
     // Input States
     this.keys = {
       w: false, a: false, s: false, d: false,
-      shift: false, space: false, q: false, e: false,
+      shift: false, space: false, q: false, e: false, f: false,
       mouse0: false, mouse2: false
     };
 
@@ -126,11 +126,12 @@ export class Player {
         this.triggerDodgeRoll();
       }
 
-      // Tactical Orders
+      // Tactical Orders & Combat Keys
       if (e.key === '1') this.useArrowVolley();
       if (e.key === '2') this.useTestudo();
       if (e.key === '3') this.useWarCry();
       if (e.key === 'q') this.toggleAimPilum(true);
+      if (key === 'f') this.isBlocking = true;
     });
 
     window.addEventListener('keyup', (e) => {
@@ -138,6 +139,7 @@ export class Player {
       if (this.keys.hasOwnProperty(key)) this.keys[key] = false;
       if (e.key === 'Shift') this.keys.shift = false;
       if (e.code === 'Space') this.keys.space = false;
+      if (key === 'f') this.isBlocking = this.keys.mouse2;
       if (e.key === 'q') {
         if (this.isAimingPilum) {
           this.throwPilum();
@@ -312,19 +314,43 @@ export class Player {
     this.health = Math.min(this.maxHealth, this.health + 30);
   }
 
-  takeDamage(amount, fromDirection) {
+  takeDamage(amount, threatSource = null) {
     if (this.isInvulnerable || this.health <= 0) return 0;
 
     let finalDamage = amount;
+
     // Check if blocking and attack is from the front
-    if (this.isBlocking && fromDirection) {
-      const facing = new THREE.Vector3(-Math.sin(this.mesh.rotation.y), 0, -Math.cos(this.mesh.rotation.y));
-      const dot = facing.dot(fromDirection.clone().negate().normalize());
-      if (dot > 0.3) { // Frontal hit
+    if (this.isBlocking && threatSource && this.stamina > 5) {
+      // Find horizontal direction from player to the threat
+      const toThreat = threatSource.clone().sub(this.position);
+      toThreat.y = 0;
+
+      // Handle if threatSource was already a direction vector or a world position
+      const distSq = toThreat.lengthSq();
+      const threatDir = distSq > 0.01 ? toThreat.normalize() : threatSource.clone().setY(0).normalize();
+
+      // Where is the Scutum shield facing? Camera world direction!
+      const facing = new THREE.Vector3();
+      this.camera.getWorldDirection(facing);
+      facing.y = 0;
+      facing.normalize();
+
+      const dot = facing.dot(threatDir);
+
+      if (dot > 0.15) { // Frontal 160-degree shield block arc!
         finalDamage = amount * (1.0 - this.upgrades.shieldDefense);
-        this.stamina = Math.max(0, this.stamina - amount * 0.4);
+        this.stamina = Math.max(0, this.stamina - Math.max(8, amount * 0.35));
+
         soundEngine.playShieldBlock();
-        return 0; // Completely or nearly mitigated
+
+        if (this.onBlockCallback) {
+          this.onBlockCallback(this.position);
+        }
+
+        // 90% to 100% mitigated
+        if (finalDamage <= 1.0) {
+          return 0; // Completely absorbed!
+        }
       }
     }
 

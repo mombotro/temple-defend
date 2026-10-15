@@ -397,7 +397,7 @@ export class EnemyManager {
           if (enemy.attackTimer >= enemy.attackCooldown) {
             enemy.attackTimer = 0;
             const dmg = enemy.type === 'boss' ? 32 : 16;
-            this.player.takeDamage(dmg, toPlayer.clone().negate());
+            this.player.takeDamage(dmg, enemy.position);
 
             // Attack animation
             if (enemy.modelData && enemy.modelData.rightArmGroup) {
@@ -456,7 +456,8 @@ export class EnemyManager {
   }
 
   updateProjectiles(delta) {
-    this.projectiles.forEach((proj, idx) => {
+    for (let idx = this.projectiles.length - 1; idx >= 0; idx--) {
+      const proj = this.projectiles[idx];
       proj.life -= delta;
       proj.velocity.y -= 14 * delta; // Gravity
       proj.position.addScaledVector(proj.velocity, delta);
@@ -467,10 +468,10 @@ export class EnemyManager {
 
       // Check hit player
       if (proj.position.distanceTo(this.player.position.clone().add(new THREE.Vector3(0, 1.2, 0))) < 1.2) {
-        this.player.takeDamage(proj.damage, proj.velocity.clone().normalize());
+        this.player.takeDamage(proj.damage, proj.position);
         this.scene.remove(proj.mesh);
         this.projectiles.splice(idx, 1);
-        return;
+        continue;
       }
 
       // Check hit ground / wall or expired
@@ -478,6 +479,6 @@ export class EnemyManager {
         this.scene.remove(proj.mesh);
         this.projectiles.splice(idx, 1);
       }
-    });
+    }
   }
 }

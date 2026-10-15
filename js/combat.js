@@ -33,6 +33,11 @@ export class CombatSystem {
     this.player.onArrowVolleyCallback = (targetPos) => {
       this.triggerArrowVolley(targetPos);
     };
+
+    this.player.onBlockCallback = (pos) => {
+      this.spawnFloatingText("🛡️ BLOCKED!", pos.clone().add(new THREE.Vector3(0, 2.0, 0)), 'text-block');
+      this.spawnHitSparks(pos.clone().add(new THREE.Vector3(0, 1.4, 0.4)), 0x64b5f6);
+    };
   }
 
   setupBoulderRacks() {
