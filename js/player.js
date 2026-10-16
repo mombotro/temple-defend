@@ -16,14 +16,15 @@ export class Player {
     // Initial position on the Temple Wall parapet overlooking the battlefield!
     this.position = new THREE.Vector3(0, 7.2, 0);
     this.mesh.position.copy(this.position);
-    this.mesh.rotation.y = Math.PI; // Face outwards toward battlefield (+Z)
+    this.mesh.rotation.y = 0; // Face outwards toward battlefield (+Z)
 
     // Camera & Mouse Look
-    this.yaw = 0; // Horizontal rotation
+    this.yaw = Math.PI; // Face outwards toward battlefield (+Z)
     this.pitch = -0.15; // Vertical tilt
     this.cameraDistance = 4.8;
     this.cameraOffset = new THREE.Vector3(0.65, 1.8, 0); // Over right shoulder
     this.isPointerLocked = false;
+    this.updateCamera(1.0); // Align camera behind player on frame 0
 
     // Movement & Physics
     this.velocity = new THREE.Vector3();
@@ -463,22 +464,40 @@ export class Player {
         // Sliding collision against solid ground obstacles (walls, towers, temple building)
         // 1. Move & test X
         let testX = newX;
+        const dx = newX - this.position.x;
         for (const obs of this.groundObstacles) {
-          if (testX > obs.minX - r && testX < obs.maxX + r && this.position.z > obs.minZ - r && this.position.z < obs.maxZ + r) {
-            const dL = testX - (obs.minX - r);
-            const dR = (obs.maxX + r) - testX;
-            testX = (dL < dR) ? (obs.minX - r) : (obs.maxX + r);
+          if (this.position.z > obs.minZ - r && this.position.z < obs.maxZ + r) {
+            if (testX > obs.minX - r && testX < obs.maxX + r) {
+              if (dx > 0) {
+                testX = obs.minX - r;
+              } else if (dx < 0) {
+                testX = obs.maxX + r;
+              } else {
+                const dL = testX - (obs.minX - r);
+                const dR = (obs.maxX + r) - testX;
+                testX = (dL < dR) ? (obs.minX - r) : (obs.maxX + r);
+              }
+            }
           }
         }
         newX = testX;
 
         // 2. Move & test Z
         let testZ = newZ;
+        const dz = newZ - this.position.z;
         for (const obs of this.groundObstacles) {
-          if (newX > obs.minX - r && newX < obs.maxX + r && testZ > obs.minZ - r && testZ < obs.maxZ + r) {
-            const dB = testZ - (obs.minZ - r);
-            const dF = (obs.maxZ + r) - testZ;
-            testZ = (dB < dF) ? (obs.minZ - r) : (obs.maxZ + r);
+          if (newX > obs.minX - r && newX < obs.maxX + r) {
+            if (testZ > obs.minZ - r && testZ < obs.maxZ + r) {
+              if (dz > 0) {
+                testZ = obs.minZ - r;
+              } else if (dz < 0) {
+                testZ = obs.maxZ + r;
+              } else {
+                const dB = testZ - (obs.minZ - r);
+                const dF = (obs.maxZ + r) - testZ;
+                testZ = (dB < dF) ? (obs.minZ - r) : (obs.maxZ + r);
+              }
+            }
           }
         }
         newZ = testZ;

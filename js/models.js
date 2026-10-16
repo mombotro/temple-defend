@@ -727,21 +727,107 @@ export function createTempleAndFortress() {
   railR.position.set(24, wallHeight + 0.5, -wallDepth / 2 + 0.2);
   fortressGroup.add(railL, railR);
 
-  // Bastion Towers (Flanking gate and ends)
-  const towerGeo = new THREE.BoxGeometry(8, wallHeight + 3.0, 8);
-  const towerGateL = new THREE.Mesh(towerGeo, materials.stoneMasonry);
-  towerGateL.position.set(-8, (wallHeight + 3.0) / 2, 0);
-  towerGateL.castShadow = true;
+  // Central Gatehouse Walkway Bridge (spans gap above gate doors, connects Wall L and Wall R)
+  const gateBridgeGeo = new THREE.BoxGeometry(12, 0.6, wallDepth);
+  const gateBridge = new THREE.Mesh(gateBridgeGeo, materials.stoneMasonry);
+  gateBridge.position.set(0, wallHeight - 0.3, 0); // Walkway top flush at y = 7.2
+  gateBridge.castShadow = true;
+  gateBridge.receiveShadow = true;
+  fortressGroup.add(gateBridge);
 
-  const towerGateR = new THREE.Mesh(towerGeo, materials.stoneMasonry);
-  towerGateR.position.set(8, (wallHeight + 3.0) / 2, 0);
-  towerGateR.castShadow = true;
+  // Gatehouse Front Parapet Crenellations (with central arrow slit for player defense)
+  const gateMerlonGeo = new THREE.BoxGeometry(2.4, 1.4, 0.6);
+  const gateMerlonL = new THREE.Mesh(gateMerlonGeo, materials.stoneMasonry);
+  gateMerlonL.position.set(-2.5, wallHeight + 0.7, wallDepth / 2 - 0.3);
+  gateMerlonL.castShadow = true;
+  const gateMerlonR = new THREE.Mesh(gateMerlonGeo, materials.stoneMasonry);
+  gateMerlonR.position.set(2.5, wallHeight + 0.7, wallDepth / 2 - 0.3);
+  gateMerlonR.castShadow = true;
+  fortressGroup.add(gateMerlonL, gateMerlonR);
 
-  const towerEndL = new THREE.Mesh(towerGeo, materials.stoneMasonry);
+  // Gatehouse Rear Safety Railing
+  const gateRail = new THREE.Mesh(new THREE.BoxGeometry(12, 1.0, 0.4), materials.stoneDark);
+  gateRail.position.set(0, wallHeight + 0.5, -wallDepth / 2 + 0.2);
+  fortressGroup.add(gateRail);
+
+  // Helper to build a Bastion Gate Tower with an Arched Walkway Corridor
+  function createGateBastionTower(towerX) {
+    const towerGroup = new THREE.Group();
+
+    // 1. Solid Stone Base (Ground to Wall Walkway level, y: 0 -> 7.2)
+    const baseGeo = new THREE.BoxGeometry(8, wallHeight, 8);
+    const baseMesh = new THREE.Mesh(baseGeo, materials.stoneMasonry);
+    baseMesh.position.set(towerX, wallHeight / 2, 0);
+    baseMesh.castShadow = true;
+    baseMesh.receiveShadow = true;
+    towerGroup.add(baseMesh);
+
+    // 2. Front Bastion Wall (overlooking battlefield, z: 1.8 -> 4.0)
+    const frontWallGeo = new THREE.BoxGeometry(8, 3.0, 2.2);
+    const frontWall = new THREE.Mesh(frontWallGeo, materials.stoneMasonry);
+    frontWall.position.set(towerX, wallHeight + 1.5, 2.9);
+    frontWall.castShadow = true;
+    frontWall.receiveShadow = true;
+    towerGroup.add(frontWall);
+
+    // Front arrow slit embrasures (dark recessed cutouts)
+    const slitGeo = new THREE.BoxGeometry(0.8, 1.5, 0.3);
+    const slitMesh = new THREE.Mesh(slitGeo, materials.stoneDark);
+    slitMesh.position.set(towerX, wallHeight + 1.5, 4.02);
+    towerGroup.add(slitMesh);
+
+    // 3. Rear Bastion Wall (overlooking temple courtyard, z: -4.0 -> -1.8)
+    const rearWallGeo = new THREE.BoxGeometry(8, 3.0, 2.2);
+    const rearWall = new THREE.Mesh(rearWallGeo, materials.stoneMasonry);
+    rearWall.position.set(towerX, wallHeight + 1.5, -2.9);
+    rearWall.castShadow = true;
+    rearWall.receiveShadow = true;
+    towerGroup.add(rearWall);
+
+    // 4. Arched Gateway Lintels over entrance and exit along X (y: 9.8)
+    const lintelGeo = new THREE.BoxGeometry(0.8, 0.6, 3.6);
+    const lintelIn = new THREE.Mesh(lintelGeo, materials.stoneDark);
+    lintelIn.position.set(towerX - 3.6, wallHeight + 2.7, 0);
+    const lintelOut = new THREE.Mesh(lintelGeo, materials.stoneDark);
+    lintelOut.position.set(towerX + 3.6, wallHeight + 2.7, 0);
+    towerGroup.add(lintelIn, lintelOut);
+
+    // 5. Tower Roof Platform (y = 10.2, where archers stand and brazier burns)
+    const roofGeo = new THREE.BoxGeometry(8.2, 0.3, 8.2);
+    const roof = new THREE.Mesh(roofGeo, materials.stoneDark);
+    roof.position.set(towerX, wallHeight + 2.85, 0); // Top surface at y = 10.2
+    roof.castShadow = true;
+    roof.receiveShadow = true;
+    towerGroup.add(roof);
+
+    // Tower Roof Battlements / Parapets around top platform
+    [
+      [towerX - 3.7, wallHeight + 3.4, 0, 0.8, 0.8, 8.0],
+      [towerX + 3.7, wallHeight + 3.4, 0, 0.8, 0.8, 8.0],
+      [towerX, wallHeight + 3.4, 3.7, 8.0, 0.8, 0.8],
+      [towerX, wallHeight + 3.4, -3.7, 8.0, 0.8, 0.8]
+    ].forEach(([bx, by, bz, bw, bh, bd]) => {
+      const bGeo = new THREE.BoxGeometry(bw, bh, bd);
+      const bMesh = new THREE.Mesh(bGeo, materials.stoneMasonry);
+      bMesh.position.set(bx, by, bz);
+      bMesh.castShadow = true;
+      towerGroup.add(bMesh);
+    });
+
+    return towerGroup;
+  }
+
+  // Bastion Towers flanking gate with arched passageways
+  const towerGateL = createGateBastionTower(-8);
+  const towerGateR = createGateBastionTower(8);
+
+  // End Bastion Towers (Flanking outer edges of wall at x = -42 and x = 42)
+  const towerEndGeo = new THREE.BoxGeometry(8, wallHeight + 3.0, 8);
+  const towerEndL = new THREE.Mesh(towerEndGeo, materials.stoneMasonry);
   towerEndL.position.set(-42, (wallHeight + 3.0) / 2, 0);
   towerEndL.castShadow = true;
 
-  const towerEndR = new THREE.Mesh(towerGeo, materials.stoneMasonry);
+  const towerEndR = new THREE.Mesh(towerEndGeo, materials.stoneMasonry);
   towerEndR.position.set(42, (wallHeight + 3.0) / 2, 0);
   towerEndR.castShadow = true;
 
