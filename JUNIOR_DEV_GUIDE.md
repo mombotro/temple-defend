@@ -75,7 +75,32 @@ Inside your project folder, every file has a special job, like soldiers in a Rom
 
 ---
 
-## 🎯 4. Mission Board: What Should We Build Next?
+## 🏆 4. Solved Mysteries & Bug Victories
+
+Every bug you discover, investigate, and squash makes you a stronger game programmer! Look at the mysteries we solved together using **Waterproof Baby Steps**:
+
+1. **🗡️ The Ghost Sword (Melee 360° Reach)**:
+   - *The Mystery*: Sword swings missed enemies right in front of you when facing certain ways.
+   - *The Fix*: Connected your attack cone directly to the camera crosshair with point-blank checks!
+2. **🛡️ The Sideways & Invisible Shield (Scutum Orientation & DoubleSide)**:
+   - *The Mystery*: The shield was turned sideways and vanished when looking from behind.
+   - *The Fix*: Removed the $90^\circ$ twist, painted both sides with `DoubleSide`, added a leather grip, and made it block arrows with blue sparks!
+3. **🌉 The Floating Centurion (Gatehouse Bridge Floor)**:
+   - *The Mystery*: Spawning in mid-air over the gate doors with no floor under your sandals.
+   - *The Fix*: Built a solid stone bridge with battlements and an arrow slit connecting the left and right walls!
+4. **🧭 The Backwards Compass (Camera Yaw)**:
+   - *The Mystery*: Spawning looking backwards at the Temple instead of at the battlefield.
+   - *The Fix*: Turned the compass $180^\circ$ so you spawn watching the Greek army march!
+5. **🏰 The Ghost Towers (Arched Gatehouse Corridors)**:
+   - *The Mystery*: Running through solid stone towers like a ghost.
+   - *The Fix*: Cut vaulted stone archways through the towers so you can run through safely with thick walls protecting your sides!
+6. **🪨 The Gate Defense Boulder**:
+   - *The Mystery*: Boulders were stuck inside tower walls.
+   - *The Fix*: Stationed a boulder rack directly on the Gatehouse Bridge so you can drop boulders onto Battering Rams!
+
+---
+
+## 🎯 5. Mission Board: What Should We Build Next?
 
 You have already built something amazing: a real 3D game with swords, shields, rolling boulders, Greek armies, and Roman horns! 
 
