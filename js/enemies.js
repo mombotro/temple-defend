@@ -5,8 +5,8 @@ import {
   createGreekArcher, 
   createAssaultLadder, 
   createBatteringRamMesh 
-} from './models.js';
-import { soundEngine } from './audio.js';
+} from './models.js?v=2.2';
+import { soundEngine } from './audio.js?v=2.2';
 
 export class EnemyManager {
   constructor(scene, player, templeFortress) {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { createRomanCenturion } from './models.js';
-import { soundEngine } from './audio.js';
+import { createRomanCenturion } from './models.js?v=2.2';
+import { soundEngine } from './audio.js?v=2.2';
 
 export class Player {
   constructor(scene, camera, domElement) {
@@ -24,7 +24,7 @@ export class Player {
     this.cameraDistance = 4.8;
     this.cameraOffset = new THREE.Vector3(0.65, 1.8, 0); // Over right shoulder
     this.isPointerLocked = false;
-    this.updateCamera(1.0); // Align camera behind player on frame 0
+    this.updateCamera(1.0, true); // Snap camera behind player immediately on frame 0
 
     // Movement & Physics
     this.velocity = new THREE.Vector3();
@@ -702,7 +702,7 @@ export class Player {
     this.updateCamera(delta);
   }
 
-  updateCamera(delta) {
+  updateCamera(delta, snap = false) {
     const targetDist = this.isAimingPilum ? 2.5 : this.cameraDistance;
 
     // Camera offset rotated by yaw
@@ -723,7 +723,11 @@ export class Player {
       idealCamPos.y = minHeight;
     }
 
-    this.camera.position.lerp(idealCamPos, Math.min(1.0, 18 * delta));
+    if (snap) {
+      this.camera.position.copy(idealCamPos);
+    } else {
+      this.camera.position.lerp(idealCamPos, Math.min(1.0, 18 * delta));
+    }
 
     // Look at target: player chest/head plus shoulder offset
     const lookTarget = this.position.clone().add(new THREE.Vector3(0, 1.7, 0)).add(camOffsetRot.clone().multiplyScalar(0.4));

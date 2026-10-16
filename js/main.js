@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { createTempleAndFortress, materials } from './models.js';
-import { Player } from './player.js';
-import { EnemyManager } from './enemies.js';
-import { CombatSystem } from './combat.js';
-import { AlliedForces } from './allies.js';
-import { UIManager } from './ui.js';
-import { soundEngine } from './audio.js';
+import { createTempleAndFortress, materials } from './models.js?v=2.2';
+import { Player } from './player.js?v=2.2';
+import { EnemyManager } from './enemies.js?v=2.2';
+import { CombatSystem } from './combat.js?v=2.2';
+import { AlliedForces } from './allies.js?v=2.2';
+import { UIManager } from './ui.js?v=2.2';
+import { soundEngine } from './audio.js?v=2.2';
 
 class Game {
   constructor() {
