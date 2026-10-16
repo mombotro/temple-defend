@@ -14,12 +14,13 @@ export class CombatSystem {
     this.arrowVolleys = [];
     this.particles = [];
 
-    // Interactive wall boulder racks
+    // Interactive wall boulder racks (stationed on open ramparts and directly above the central gate)
     this.boulderRacks = [
-      { pos: new THREE.Vector3(-18, 7.2, 2.2), available: true, respawnTimer: 0 },
-      { pos: new THREE.Vector3(-6, 7.2, 2.2), available: true, respawnTimer: 0 },
-      { pos: new THREE.Vector3(6, 7.2, 2.2), available: true, respawnTimer: 0 },
-      { pos: new THREE.Vector3(18, 7.2, 2.2), available: true, respawnTimer: 0 }
+      { pos: new THREE.Vector3(-26, 7.2, 2.2), available: true, respawnTimer: 0 },
+      { pos: new THREE.Vector3(-16, 7.2, 2.2), available: true, respawnTimer: 0 },
+      { pos: new THREE.Vector3(0, 7.2, 2.2), available: true, respawnTimer: 0 }, // Directly above the oak gate doors!
+      { pos: new THREE.Vector3(16, 7.2, 2.2), available: true, respawnTimer: 0 },
+      { pos: new THREE.Vector3(26, 7.2, 2.2), available: true, respawnTimer: 0 }
     ];
 
     this.boulderMeshes = [];

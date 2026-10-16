@@ -132,10 +132,10 @@ export class EnemyManager {
   }
 
   setupAssaultLadder(targetX) {
-    // Clamp ladder X along the wall (excluding central gate: |x| > 5)
+    // Clamp ladder X along the open wall sections (excluding gate and bastion towers: |x| >= 14, |x| <= 34)
     let ladderX = targetX;
-    if (Math.abs(ladderX) < 6) ladderX = (ladderX < 0 ? -10 : 10);
-    ladderX = Math.max(-36, Math.min(36, ladderX));
+    if (Math.abs(ladderX) < 14) ladderX = (ladderX < 0 ? -18 : 18);
+    ladderX = Math.max(-34, Math.min(34, ladderX));
 
     const ladderMesh = createAssaultLadder();
     // Position ladder leaning against the front of the wall
@@ -383,8 +383,15 @@ export class EnemyManager {
 
       // D. Close Quarters Melee with Player
       else if (enemy.state === 'melee_player') {
+        // If enemy is on the ground but player climbed back up to the wall, resume attacking the gate!
+        if (enemy.position.y < 3.0 && playerPos.y > 5.0) {
+          enemy.state = (enemy.type === 'peltast' || enemy.type === 'archer') ? 'ranged_attack' : 'attacking_gate';
+          return;
+        }
+
         const toPlayer = playerPos.clone().sub(enemy.position);
         const distToPlayer = toPlayer.length();
+        const verticalDiff = Math.abs(playerPos.y - enemy.position.y);
 
         enemy.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
 
@@ -392,9 +399,15 @@ export class EnemyManager {
           toPlayer.y = 0;
           toPlayer.normalize();
           enemy.position.addScaledVector(toPlayer, enemy.speed * delta);
+
+          // Constrain enemies on the ramparts so they don't fall off or float behind the wall
+          if (enemy.position.y > 5.0) {
+            enemy.position.z = Math.max(-1.6, Math.min(1.8, enemy.position.z));
+            enemy.position.x = Math.max(-38.0, Math.min(38.0, enemy.position.x));
+          }
         } else {
-          // Strike Player
-          if (enemy.attackTimer >= enemy.attackCooldown) {
+          // Strike Player (only if within vertical melee reach)
+          if (enemy.attackTimer >= enemy.attackCooldown && verticalDiff < 2.5) {
             enemy.attackTimer = 0;
             const dmg = enemy.type === 'boss' ? 32 : 16;
             this.player.takeDamage(dmg, enemy.position);
