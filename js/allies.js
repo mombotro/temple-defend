@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { createRomanLegionary } from './models.js?v=2.2';
-import { soundEngine } from './audio.js?v=2.2';
+import { createRomanLegionary } from './models.js?v=2.3';
+import { soundEngine } from './audio.js?v=2.3';
 
 export class AlliedForces {
   constructor(scene, enemyManager) {

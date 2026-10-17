@@ -146,6 +146,43 @@ export function createPilumMesh() {
   return pilum;
 }
 
+// --- HELPER: Create Greek Dory Spear (Heavy Hoplite Thrusting Spear) ---
+export function createGreekSpearMesh() {
+  const spearGroup = new THREE.Group();
+
+  // 1. Long wooden ash shaft (2.4m long)
+  // Shifted along Y so the warrior's hand grips it around 1/3 from the rear (grip balance point)
+  const gripOffset = 0.35;
+  const shaftGeo = new THREE.CylinderGeometry(0.025, 0.025, 2.4, 8);
+  const shaft = new THREE.Mesh(shaftGeo, materials.greekWood);
+  shaft.position.y = gripOffset;
+  shaft.castShadow = true;
+  spearGroup.add(shaft);
+
+  // 2. Bronze socket collar connecting shaft to blade
+  const collarGeo = new THREE.CylinderGeometry(0.032, 0.026, 0.08, 8);
+  const collar = new THREE.Mesh(collarGeo, materials.greekBronze);
+  collar.position.y = gripOffset + 1.2 + 0.04; // Sits flush on top of the 2.4m shaft
+  spearGroup.add(collar);
+
+  // 3. Steel leaf-shaped spearhead blade (spear tip)
+  const tipGeo = new THREE.ConeGeometry(0.065, 0.35, 4);
+  tipGeo.scale(0.35, 1, 1); // Flatten for classic leaf blade profile
+  const tip = new THREE.Mesh(tipGeo, materials.steelBlade);
+  tip.position.y = gripOffset + 1.2 + 0.08 + 0.175; // Sits directly on collar, apex points forward
+  tip.castShadow = true;
+  spearGroup.add(tip);
+
+  // 4. Bronze Sauroter ("Lizard-Killer") butt-spike at back end
+  const sauroterGeo = new THREE.ConeGeometry(0.038, 0.18, 4);
+  const sauroter = new THREE.Mesh(sauroterGeo, materials.greekBronze);
+  sauroter.rotation.z = Math.PI; // Point spike backwards
+  sauroter.position.y = gripOffset - 1.2 - 0.09; // Sits flush at bottom of shaft
+  spearGroup.add(sauroter);
+
+  return spearGroup;
+}
+
 // ==========================================
 // 1. ROMAN CENTURION (PLAYER CHARACTER)
 // ==========================================
@@ -416,6 +453,12 @@ export function createGreekHoplite(isBoss = false) {
   const leftArmGroup = new THREE.Group();
   leftArmGroup.position.set(0.32, 1.25, 0);
 
+  const armLGeo = new THREE.CylinderGeometry(0.075, 0.065, 0.55, 8);
+  const armL = new THREE.Mesh(armLGeo, materials.skinTone);
+  armL.position.y = -0.25;
+  armL.castShadow = true;
+  leftArmGroup.add(armL);
+
   // Aspis shield
   const aspisGeo = new THREE.SphereGeometry(0.55, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.3);
   const aspis = new THREE.Mesh(aspisGeo, shieldMat);
@@ -447,16 +490,23 @@ export function createGreekHoplite(isBoss = false) {
   const rightArmGroup = new THREE.Group();
   rightArmGroup.position.set(-0.32, 1.25, 0);
 
-  const spearGroup = new THREE.Group();
-  const spearShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.4, 8), materials.greekWood);
-  spearShaft.position.set(0, 0.4, 0.2);
-  spearShaft.rotation.x = Math.PI / 3;
+  // Greek Warrior's Right Arm (holding the spear)
+  const armRGeo = new THREE.CylinderGeometry(0.075, 0.065, 0.55, 8);
+  const armR = new THREE.Mesh(armRGeo, materials.skinTone);
+  armR.position.y = -0.25;
+  armR.castShadow = true;
+  rightArmGroup.add(armR);
 
-  const spearTip = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.25, 4), materials.steelBlade);
-  spearTip.position.set(0, 1.45, 0.8);
-  spearTip.rotation.x = Math.PI / 3;
+  // Bronze Vambrace (Forearm Armor)
+  const vambraceGeo = new THREE.CylinderGeometry(0.078, 0.068, 0.22, 8);
+  const vambrace = new THREE.Mesh(vambraceGeo, armorMat);
+  vambrace.position.y = -0.32;
+  rightArmGroup.add(vambrace);
 
-  spearGroup.add(spearShaft, spearTip);
+  // Greek Dory Spear (Spear tip is locked onto the end of the shaft!)
+  const spearGroup = createGreekSpearMesh();
+  spearGroup.position.set(0, -0.48, 0.12);
+  spearGroup.rotation.x = Math.PI / 2.3;
   rightArmGroup.add(spearGroup);
   torsoGroup.add(rightArmGroup);
 

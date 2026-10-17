@@ -97,6 +97,9 @@ Every bug you discover, investigate, and squash makes you a stronger game progra
 6. **🪨 The Gate Defense Boulder**:
    - *The Mystery*: Boulders were stuck inside tower walls.
    - *The Fix*: Stationed a boulder rack directly on the Gatehouse Bridge so you can drop boulders onto Battering Rams!
+7. **🔱 The Flying Spear Tip (Greek Dory Spear Hierarchy)**:
+   - *The Mystery*: Greek hoplites had their steel spear tip floating in mid-air away from the wooden shaft!
+   - *The Fix*: Built a unified `createGreekSpearMesh()` 3D model with the ash wood shaft, bronze collar, steel leaf-blade, and bronze "sauroter" (lizard-killer) butt-spike all locked together permanently in one group!
 
 ---
 
