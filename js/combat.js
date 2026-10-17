@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { createPilumMesh, createRampartBoulder } from './models.js?v=2.3';
-import { soundEngine } from './audio.js?v=2.3';
+import { createPilumMesh, createRampartBoulder } from './models.js?v=2.4';
+import { soundEngine } from './audio.js?v=2.4';
 
 export class CombatSystem {
   constructor(scene, camera, player, enemyManager) {
@@ -134,8 +134,7 @@ export class CombatSystem {
         this.spawnHitSparks(ram.position.clone().add(new THREE.Vector3(0, 1.5, 0)), 0xff8800);
         soundEngine.playSwordHit();
         if (ram.health <= 0) {
-          ram.isDestroyed = true;
-          this.scene.remove(ram.mesh);
+          this.enemyManager.destroyRam(ram);
           this.spawnFloatingText("RAM DESTROYED!", ram.position, 'text-gold');
         }
       }
@@ -338,8 +337,7 @@ export class CombatSystem {
           if (!ram.isDestroyed && ram.position.distanceTo(boulder.position) < 7.0) {
             ram.health -= boulder.damage;
             if (ram.health <= 0) {
-              ram.isDestroyed = true;
-              this.scene.remove(ram.mesh);
+              this.enemyManager.destroyRam(ram);
               this.spawnFloatingText("RAM CRUSHED!", ram.position, 'text-gold');
             }
           }

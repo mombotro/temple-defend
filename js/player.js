@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { createRomanCenturion } from './models.js?v=2.3';
-import { soundEngine } from './audio.js?v=2.3';
+import { createRomanCenturion } from './models.js?v=2.4';
+import { soundEngine } from './audio.js?v=2.4';
 
 export class Player {
   constructor(scene, camera, domElement) {

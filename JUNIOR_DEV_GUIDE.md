@@ -100,6 +100,9 @@ Every bug you discover, investigate, and squash makes you a stronger game progra
 7. **🔱 The Flying Spear Tip (Greek Dory Spear Hierarchy)**:
    - *The Mystery*: Greek hoplites had their steel spear tip floating in mid-air away from the wooden shaft!
    - *The Fix*: Built a unified `createGreekSpearMesh()` 3D model with the ash wood shaft, bronze collar, steel leaf-blade, and bronze "sauroter" (lizard-killer) butt-spike all locked together permanently in one group!
+8. **👻 The Phantom 3 Enemies of Wave III (Siege Equipment Ghost Count)**:
+   - *The Mystery*: In Wave III, the counter said 3 enemies were left, but no soldiers appeared and the wave would never finish!
+   - *The Fix*: The game was accidentally counting 2 wooden assault ladders and the Battering Ram as "enemy soldiers" in the HUD! When all soldiers were defeated, the counter got stuck waiting to kill wooden props! We separated siege equipment from soldiers, gave the Battering Ram a clean `destroyRam()` system that grants +80 Denarii, and made Wave III end in glorious victory!
 
 ---
 

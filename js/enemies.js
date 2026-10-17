@@ -5,8 +5,8 @@ import {
   createGreekArcher, 
   createAssaultLadder, 
   createBatteringRamMesh 
-} from './models.js?v=2.3';
-import { soundEngine } from './audio.js?v=2.3';
+} from './models.js?v=2.4';
+import { soundEngine } from './audio.js?v=2.4';
 
 export class EnemyManager {
   constructor(scene, player, templeFortress) {
@@ -40,47 +40,60 @@ export class EnemyManager {
     this.spawnQueue = [];
     this.spawnTimer = 0;
 
-    // Define wave composition
+    // Clean up any lingering ladders or destroyed rams from previous wave
+    for (let i = this.ladders.length - 1; i >= 0; i--) {
+      this.scene.remove(this.ladders[i].mesh);
+    }
+    this.ladders = [];
+
+    for (let i = this.batteringRams.length - 1; i >= 0; i--) {
+      this.scene.remove(this.batteringRams[i].mesh);
+    }
+    this.batteringRams = [];
+
+    // Define wave composition (ONLY ACTUAL COMBAT TARGETS COUNTED IN THE HUD!)
     if (waveNumber === 1) {
-      // Vanguard Skirmishers
+      // Wave 1: Vanguard Skirmishers (14 enemies)
       for (let i = 0; i < 8; i++) this.spawnQueue.push('peltast');
       for (let i = 0; i < 6; i++) this.spawnQueue.push('hoplite');
     } else if (waveNumber === 2) {
-      // Phalanx & First Ladders
+      // Wave 2: Phalanx & First Ladders (20 enemies)
+      this.setupAssaultLadder(-22);
+      this.setupAssaultLadder(22);
       for (let i = 0; i < 10; i++) this.spawnQueue.push('hoplite');
       for (let i = 0; i < 6; i++) this.spawnQueue.push('peltast');
       for (let i = 0; i < 4; i++) this.spawnQueue.push('archer');
-      this.spawnQueue.push('ladder');
-      this.spawnQueue.push('ladder');
     } else if (waveNumber === 3) {
-      // Ranged barrage + heavier assault
+      // Wave 3: Heavier assault + Battering Ram! (29 targets: 28 soldiers + 1 ram)
+      this.setupAssaultLadder(-26);
+      this.setupAssaultLadder(26);
       for (let i = 0; i < 14; i++) this.spawnQueue.push('hoplite');
       for (let i = 0; i < 8; i++) this.spawnQueue.push('archer');
       for (let i = 0; i < 6; i++) this.spawnQueue.push('peltast');
-      this.spawnQueue.push('ladder');
-      this.spawnQueue.push('ladder');
-      this.spawnQueue.push('ram');
+      // Ram rolls out early alongside the advancing soldiers
+      this.spawnQueue.splice(4, 0, 'ram');
     } else if (waveNumber === 4) {
-      // Full scale siege
+      // Wave 4: Full scale siege (37 targets: 36 soldiers + 1 ram)
+      this.setupAssaultLadder(-28);
+      this.setupAssaultLadder(18);
+      this.setupAssaultLadder(28);
       for (let i = 0; i < 18; i++) this.spawnQueue.push('hoplite');
       for (let i = 0; i < 10; i++) this.spawnQueue.push('archer');
       for (let i = 0; i < 8; i++) this.spawnQueue.push('peltast');
-      this.spawnQueue.push('ladder');
-      this.spawnQueue.push('ladder');
-      this.spawnQueue.push('ladder');
-      this.spawnQueue.push('ram');
+      this.spawnQueue.splice(6, 0, 'ram');
     } else {
-      // Wave 5: Spartan Champion Boss & Grand Greek Army
+      // Wave 5: Spartan Champion Boss & Grand Greek Army (40 targets: 38 soldiers + 1 ram + Boss)
+      this.setupAssaultLadder(-24);
+      this.setupAssaultLadder(24);
       for (let i = 0; i < 20; i++) this.spawnQueue.push('hoplite');
       for (let i = 0; i < 10; i++) this.spawnQueue.push('archer');
       for (let i = 0; i < 8; i++) this.spawnQueue.push('peltast');
-      this.spawnQueue.push('ladder');
-      this.spawnQueue.push('ladder');
-      this.spawnQueue.push('ram');
+      this.spawnQueue.splice(8, 0, 'ram');
       this.spawnQueue.push('boss');
     }
 
-    this.waveTotalEnemies = this.spawnQueue.length;
+    // Only count actual killable targets (soldiers + rams + boss)
+    this.waveTotalEnemies = this.spawnQueue.filter(t => t !== 'ladder').length;
     this.waveEnemiesRemaining = this.waveTotalEnemies;
   }
 
@@ -174,17 +187,34 @@ export class EnemyManager {
     this.batteringRams.push(ramObj);
   }
 
+  destroyRam(ram) {
+    if (ram.isDestroyed) return;
+    ram.isDestroyed = true;
+    this.scene.remove(ram.mesh);
+
+    // Remove from array so wave completion check can pass!
+    const idx = this.batteringRams.indexOf(ram);
+    if (idx !== -1) {
+      this.batteringRams.splice(idx, 1);
+    }
+
+    this.waveEnemiesRemaining = Math.max(0, this.waveEnemiesRemaining - 1);
+    soundEngine.playBoulderCrash();
+
+    if (this.onEnemyKilled) {
+      this.onEnemyKilled({ type: 'ram', position: ram.position }, true);
+    }
+  }
+
   pushLadderDown(ladder) {
     if (ladder.isPushedDown) return;
     ladder.isPushedDown = true;
     soundEngine.playLadderPush();
 
-    // Damage all enemies currently climbing this ladder
+    // Defeat all enemies currently climbing this ladder
     this.enemies.forEach(e => {
       if (e.assignedLadder === ladder && e.state === 'climbing') {
-        e.health = 0;
-        e.state = 'dead';
-        this.onEnemyKilled(e, true);
+        this.damageEnemy(e, 9999, true);
       }
     });
   }

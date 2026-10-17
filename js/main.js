@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { createTempleAndFortress, materials } from './models.js?v=2.3';
-import { Player } from './player.js?v=2.3';
-import { EnemyManager } from './enemies.js?v=2.3';
-import { CombatSystem } from './combat.js?v=2.3';
-import { AlliedForces } from './allies.js?v=2.3';
-import { UIManager } from './ui.js?v=2.3';
-import { soundEngine } from './audio.js?v=2.3';
+import { createTempleAndFortress, materials } from './models.js?v=2.4';
+import { Player } from './player.js?v=2.4';
+import { EnemyManager } from './enemies.js?v=2.4';
+import { CombatSystem } from './combat.js?v=2.4';
+import { AlliedForces } from './allies.js?v=2.4';
+import { UIManager } from './ui.js?v=2.4';
+import { soundEngine } from './audio.js?v=2.4';
 
 class Game {
   constructor() {
@@ -171,7 +171,7 @@ class Game {
     // Enemy killed reward
     this.enemies.onEnemyKilled = (enemy, isCrit) => {
       this.player.kills++;
-      const valor = enemy.type === 'boss' ? 120 : (enemy.type === 'hoplite' ? 15 : 10);
+      const valor = enemy.type === 'boss' ? 120 : (enemy.type === 'ram' ? 80 : (enemy.type === 'hoplite' ? 15 : 10));
       this.player.denarii += valor;
       this.combat.spawnFloatingText(`+${valor} 🪙`, enemy.position, 'text-gold');
     };
