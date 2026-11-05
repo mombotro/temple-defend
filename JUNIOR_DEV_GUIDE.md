@@ -106,6 +106,9 @@ Every bug you discover, investigate, and squash makes you a stronger game progra
 9. **🪜 The Frozen Ladder Climbers (3D Mesh Sync, Physics Falling & Clean Pathing)**:
    - *The Mystery*: When Greek soldiers climbed ladders, some would freeze in mid-air, freeze at the top of the wall, or freeze at the foot of toppled ladders!
    - *The Fix*: Four sneaky bugs were caught! (1) Early code `return;` statements were skipping the 3D model position updates on screen. (2) Defeated climbers were hovering frozen in mid-air; we added falling physics so they tumble to the grass! (3) Soldiers arriving at toppled ladders now immediately charge the central gate instead of freezing in place. (4) Hoplites queue up one at a time so they never merge into a single overlapping glitched soldier!
+10. **☁️ The Mid-Air Floating Greeks (Rampart Kinematics, Stair Pathing & Universal Gravity)**:
+   - *The Mystery*: When Greek hoplites mounted the rampart wall, they floated in mid-air and followed the Centurion while flying across the courtyard!
+   - *The Fix*: The Greeks were missing a full staircase path and gravity! When they walked down the stairs to chase the player, their code stopped halfway down ($y = 5.0$), launching them straight into the sky! We gave them: (1) Seamless stair slope kinematics connecting the wall ($y = 7.2$) all the way to the courtyard ground ($y = 0.0$), (2) Universal gravity pulling airborne soldiers down to the floor, (3) Solid walkway boundaries preventing soldiers from stepping into thin air, and (4) Natural walking animations that only swing when moving and stand solidly on the stone floor!
 
 ---
 
