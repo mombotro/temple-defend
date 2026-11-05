@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { createTempleAndFortress, materials } from './models.js?v=2.5';
-import { Player } from './player.js?v=2.5';
-import { EnemyManager } from './enemies.js?v=2.5';
-import { CombatSystem } from './combat.js?v=2.5';
-import { AlliedForces } from './allies.js?v=2.5';
-import { UIManager } from './ui.js?v=2.5';
-import { soundEngine } from './audio.js?v=2.5';
+import { createTempleAndFortress, materials } from './models.js?v=2.6';
+import { Player } from './player.js?v=2.6';
+import { EnemyManager } from './enemies.js?v=2.6';
+import { CombatSystem } from './combat.js?v=2.6';
+import { AlliedForces } from './allies.js?v=2.6';
+import { UIManager } from './ui.js?v=2.6';
+import { soundEngine } from './audio.js?v=2.6';
 
 class Game {
   constructor() {
@@ -334,7 +334,11 @@ class Game {
   }
 }
 
-// Start Game instance on DOM load
-window.addEventListener('DOMContentLoaded', () => {
-  new Game();
-});
+// Start Game instance on DOM load or immediately if already loaded
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', () => {
+    window.game = new Game();
+  });
+} else {
+  window.game = new Game();
+}

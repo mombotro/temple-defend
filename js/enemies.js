@@ -5,8 +5,8 @@ import {
   createGreekArcher, 
   createAssaultLadder, 
   createBatteringRamMesh 
-} from './models.js?v=2.5';
-import { soundEngine } from './audio.js?v=2.5';
+} from './models.js?v=2.6';
+import { soundEngine } from './audio.js?v=2.6';
 
 export class EnemyManager {
   constructor(scene, player, templeFortress) {
@@ -212,10 +212,16 @@ export class EnemyManager {
     ladder.isPushedDown = true;
     soundEngine.playLadderPush();
 
-    // Defeat all enemies currently climbing this ladder
+    // Defeat all enemies currently climbing this ladder, tumbling them to ground
     this.enemies.forEach(e => {
-      if (e.assignedLadder === ladder && e.state === 'climbing') {
-        this.damageEnemy(e, 9999, true);
+      if (e.assignedLadder === ladder) {
+        if (e.state === 'climbing') {
+          this.damageEnemy(e, 9999, true);
+        } else if (e.state === 'advancing') {
+          // Re-route runners immediately to the central gate
+          e.assignedLadder = null;
+          e.targetPos.set((Math.random() - 0.5) * 6, 0, 3.2);
+        }
       }
     });
   }
@@ -240,17 +246,24 @@ export class EnemyManager {
     soundEngine.playSwordHit(isCrit);
 
     // Apply knockback
-    if (knockbackDir) {
+    if (knockbackDir && enemy.state !== 'climbing') {
       enemy.position.addScaledVector(knockbackDir.clone().setY(0).normalize(), isCrit ? 2.2 : 1.2);
     }
 
     if (enemy.health <= 0) {
+      const wasClimbing = enemy.state === 'climbing';
       enemy.state = 'dead';
       this.waveEnemiesRemaining = Math.max(0, this.waveEnemiesRemaining - 1);
       if (this.onEnemyKilled) this.onEnemyKilled(enemy, isCrit);
 
       // Death animation
       enemy.mesh.rotation.x = Math.PI / 2;
+      if (wasClimbing) {
+        // Tumble backwards off ladder to ground (no hovering frozen in mid-air!)
+        enemy.position.y = 0;
+        enemy.position.z += 1.4;
+        enemy.mesh.position.copy(enemy.position);
+      }
       setTimeout(() => {
         this.scene.remove(enemy.mesh);
         const idx = this.enemies.indexOf(enemy);
@@ -277,17 +290,18 @@ export class EnemyManager {
       if (this.onWaveComplete) this.onWaveComplete(this.currentWave);
     }
 
-    // 2. Update Ladders
-    this.ladders.forEach((ladder, idx) => {
+    // 2. Update Ladders (Reverse loop prevents skipping indices on splice)
+    for (let i = this.ladders.length - 1; i >= 0; i--) {
+      const ladder = this.ladders[i];
       if (ladder.isPushedDown) {
         ladder.fallTimer += delta;
         ladder.mesh.rotation.x += delta * 1.8;
         if (ladder.fallTimer >= 2.0) {
           this.scene.remove(ladder.mesh);
-          this.ladders.splice(idx, 1);
+          this.ladders.splice(i, 1);
         }
       }
-    });
+    }
 
     // 3. Update Battering Rams
     this.batteringRams.forEach((ram, idx) => {
@@ -320,8 +334,8 @@ export class EnemyManager {
       enemy.animTime += delta * 8;
       enemy.attackTimer += delta;
 
-      // Leg swing animation
-      if (enemy.modelData && enemy.modelData.legLGroup) {
+      // Leg swing animation for advancing & melee
+      if (enemy.modelData && enemy.modelData.legLGroup && enemy.modelData.legRGroup && enemy.state !== 'climbing') {
         const legSwing = Math.sin(enemy.animTime) * 0.55;
         enemy.modelData.legLGroup.rotation.x = legSwing;
         enemy.modelData.legRGroup.rotation.x = -legSwing;
@@ -340,7 +354,9 @@ export class EnemyManager {
           enemy.hasTargetPlan = true;
           if (enemy.type === 'hoplite') {
             const availableLadder = this.ladders.find(l => !l.isPushedDown && Math.abs(l.x - enemy.position.x) < 26);
-            if (availableLadder && Math.random() < 0.65) {
+            // Check if ladder is already busy with another climber at the base (prevents stacking / overlapping)
+            const ladderOccupied = availableLadder && this.enemies.some(e => e !== enemy && e.assignedLadder === availableLadder && e.state === 'climbing' && e.climbProgress < 0.45);
+            if (availableLadder && !ladderOccupied && Math.random() < 0.65) {
               enemy.assignedLadder = availableLadder;
               enemy.targetPos.set(availableLadder.x, 0, availableLadder.z + 0.1);
             } else {
@@ -379,6 +395,10 @@ export class EnemyManager {
             enemy.position.x = enemy.assignedLadder.x;
             enemy.position.z = enemy.assignedLadder.z;
             enemy.position.y = 0;
+          } else if (enemy.assignedLadder && enemy.assignedLadder.isPushedDown) {
+            // Ladder was toppled! Re-route to gate instead of freezing at ladder base!
+            enemy.assignedLadder = null;
+            enemy.targetPos.set((Math.random() - 0.5) * 6, 0, 3.2);
           } else if (enemy.type === 'hoplite' || enemy.type === 'boss') {
             enemy.state = 'attacking_gate';
           } else {
@@ -393,52 +413,68 @@ export class EnemyManager {
           enemy.state = 'advancing';
           enemy.assignedLadder = null;
           enemy.hasTargetPlan = false;
-          return;
-        }
+          enemy.position.y = 0;
+        } else {
+          // Face the wall while climbing ladder (facing -Z towards parapet)
+          enemy.mesh.rotation.y = Math.PI;
 
-        // Face the wall while climbing ladder (facing -Z towards parapet)
-        enemy.mesh.rotation.y = Math.PI;
-
-        // Climbing arm & leg movement animation
-        if (enemy.modelData && enemy.modelData.legLGroup && enemy.modelData.rightArmGroup) {
+          // Climbing arm & leg movement animation
           const climbCycle = Math.sin(enemy.animTime * 1.5);
-          enemy.modelData.legLGroup.rotation.x = climbCycle * 0.7;
-          enemy.modelData.legRGroup.rotation.x = -climbCycle * 0.7;
-          enemy.modelData.rightArmGroup.rotation.x = -climbCycle * 0.5 + 0.4;
-        }
-
-        enemy.climbProgress += delta * 0.38; // Climbs to top in ~2.6 seconds
-        enemy.position.y = Math.min(7.2, enemy.climbProgress * 7.2);
-        enemy.position.x = enemy.assignedLadder.x;
-        // Follow ladder lean from z = 3.2 at base to z = 2.2 at rampart top
-        enemy.position.z = THREE.MathUtils.lerp(enemy.assignedLadder.z, 2.2, Math.min(1.0, enemy.climbProgress));
-
-        if (enemy.climbProgress >= 1.0) {
-          // Successfully mounted the parapet wall!
-          enemy.position.set(enemy.assignedLadder.x, 7.2, 1.4);
-          enemy.assignedLadder = null;
-          enemy.state = 'melee_player';
-
-          // Reset arms from climbing pose
+          if (enemy.modelData && enemy.modelData.legLGroup && enemy.modelData.legRGroup) {
+            enemy.modelData.legLGroup.rotation.x = climbCycle * 0.75;
+            enemy.modelData.legRGroup.rotation.x = -climbCycle * 0.75;
+          }
           if (enemy.modelData && enemy.modelData.rightArmGroup) {
-            enemy.modelData.rightArmGroup.rotation.x = 0;
+            enemy.modelData.rightArmGroup.rotation.x = -climbCycle * 0.5 + 0.4;
+          }
+
+          enemy.climbProgress += delta * 0.38; // Climbs to top in ~2.6 seconds
+          enemy.position.y = Math.min(7.2, enemy.climbProgress * 7.2);
+          enemy.position.x = enemy.assignedLadder.x;
+          // Follow ladder lean from z = 3.2 at base to z = 2.2 at rampart top
+          enemy.position.z = THREE.MathUtils.lerp(enemy.assignedLadder.z, 2.2, Math.min(1.0, enemy.climbProgress));
+
+          if (enemy.climbProgress >= 1.0) {
+            // Successfully mounted the parapet wall!
+            enemy.position.set(enemy.assignedLadder.x, 7.2, 1.2);
+            enemy.assignedLadder = null;
+            enemy.state = 'melee_player';
+
+            // Reset arms from climbing pose
+            if (enemy.modelData && enemy.modelData.rightArmGroup) {
+              enemy.modelData.rightArmGroup.rotation.x = 0;
+            }
           }
         }
       }
 
       // C. Attacking Central Gate
       else if (enemy.state === 'attacking_gate') {
-        if (enemy.attackTimer >= enemy.attackCooldown) {
-          enemy.attackTimer = 0;
-          soundEngine.playSwordHit();
-          if (this.onGateDamage) this.onGateDamage(enemy.type === 'boss' ? 22 : 6);
+        // If enemy is far from central gate (|x| > 3.5), navigate to gate first!
+        if (Math.abs(enemy.position.x) > 3.5 || enemy.position.z > 4.5) {
+          const toGateX = -enemy.position.x;
+          const toGateZ = 3.2 - enemy.position.z;
+          const dist = Math.sqrt(toGateX * toGateX + toGateZ * toGateZ);
+          if (dist > 0.5) {
+            enemy.position.x += (toGateX / dist) * enemy.speed * delta;
+            enemy.position.z += (toGateZ / dist) * enemy.speed * delta;
+            enemy.mesh.rotation.y = Math.atan2(toGateX, toGateZ);
+          }
+        } else {
+          // At gate: attack doors
+          enemy.mesh.rotation.y = Math.PI; // Face gate
+          if (enemy.attackTimer >= enemy.attackCooldown) {
+            enemy.attackTimer = 0;
+            soundEngine.playSwordHit();
+            if (this.onGateDamage) this.onGateDamage(enemy.type === 'boss' ? 22 : 6);
 
-          // Thrust spear animation
-          if (enemy.modelData && enemy.modelData.rightArmGroup) {
-            enemy.modelData.rightArmGroup.rotation.x = Math.PI / 3;
-            setTimeout(() => {
-              if (enemy.modelData && enemy.modelData.rightArmGroup) enemy.modelData.rightArmGroup.rotation.x = 0;
-            }, 250);
+            // Thrust spear animation
+            if (enemy.modelData && enemy.modelData.rightArmGroup) {
+              enemy.modelData.rightArmGroup.rotation.x = Math.PI / 3;
+              setTimeout(() => {
+                if (enemy.modelData && enemy.modelData.rightArmGroup) enemy.modelData.rightArmGroup.rotation.x = 0;
+              }, 250);
+            }
           }
         }
 
@@ -463,47 +499,51 @@ export class EnemyManager {
             enemy.position.x += Math.sign(toStair) * enemy.speed * delta;
             enemy.mesh.rotation.y = toStair > 0 ? Math.PI / 2 : -Math.PI / 2;
           } else {
-            // Walk down the stairs
+            // Walk down the stairs from z = -1.6 (top) down to z = -14.6 (courtyard ground)
             enemy.position.z -= enemy.speed * delta;
-            if (enemy.position.z < -4.0) {
+            enemy.mesh.rotation.y = Math.PI;
+            const t = (enemy.position.z - (-14.6)) / (-1.6 - (-14.6));
+            enemy.position.y = THREE.MathUtils.clamp(t * 7.2, 0.0, 7.2);
+            if (enemy.position.z <= -14.6) {
               enemy.position.y = 0;
-              enemy.position.z = -6.0;
+              enemy.position.z = -15.0;
             }
           }
-          return;
         }
 
         // If enemy is on the ground (y < 3.0) but player climbed back up to the wall (y > 5.0):
-        if (enemy.position.y < 3.0 && playerPos.y > 5.0) {
+        else if (enemy.position.y < 3.0 && playerPos.y > 5.0) {
           enemy.state = (enemy.type === 'peltast' || enemy.type === 'archer') ? 'ranged_attack' : 'attacking_gate';
-          return;
         }
 
-        enemy.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+        // Standard melee pursuit
+        else {
+          enemy.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
 
-        if (horizDist > 1.8) {
-          toPlayer.y = 0;
-          toPlayer.normalize();
-          enemy.position.addScaledVector(toPlayer, enemy.speed * delta);
+          if (horizDist > 1.8) {
+            toPlayer.y = 0;
+            toPlayer.normalize();
+            enemy.position.addScaledVector(toPlayer, enemy.speed * delta);
 
-          // Constrain enemies on the ramparts so they don't fall off
-          if (enemy.position.y > 5.0) {
-            enemy.position.z = Math.max(-1.6, Math.min(1.8, enemy.position.z));
-            enemy.position.x = Math.max(-38.0, Math.min(38.0, enemy.position.x));
-          }
-        } else {
-          // Strike Player (only if within reach)
-          if (enemy.attackTimer >= enemy.attackCooldown && verticalDiff < 2.5) {
-            enemy.attackTimer = 0;
-            const dmg = enemy.type === 'boss' ? 32 : 16;
-            this.player.takeDamage(dmg, enemy.position);
+            // Constrain enemies on the ramparts so they don't fall off
+            if (enemy.position.y > 5.0) {
+              enemy.position.z = Math.max(-1.6, Math.min(1.8, enemy.position.z));
+              enemy.position.x = Math.max(-38.0, Math.min(38.0, enemy.position.x));
+            }
+          } else {
+            // Strike Player (only if within reach)
+            if (enemy.attackTimer >= enemy.attackCooldown && verticalDiff < 2.5) {
+              enemy.attackTimer = 0;
+              const dmg = enemy.type === 'boss' ? 32 : 16;
+              this.player.takeDamage(dmg, enemy.position);
 
-            // Attack animation
-            if (enemy.modelData && enemy.modelData.rightArmGroup) {
-              enemy.modelData.rightArmGroup.rotation.x = Math.PI / 2.5;
-              setTimeout(() => {
-                if (enemy.modelData && enemy.modelData.rightArmGroup) enemy.modelData.rightArmGroup.rotation.x = 0;
-              }, 200);
+              // Attack animation
+              if (enemy.modelData && enemy.modelData.rightArmGroup) {
+                enemy.modelData.rightArmGroup.rotation.x = Math.PI / 2.5;
+                setTimeout(() => {
+                  if (enemy.modelData && enemy.modelData.rightArmGroup) enemy.modelData.rightArmGroup.rotation.x = 0;
+                }, 200);
+              }
             }
           }
         }

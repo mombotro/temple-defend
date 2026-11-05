@@ -103,9 +103,9 @@ Every bug you discover, investigate, and squash makes you a stronger game progra
 8. **👻 The Phantom 3 Enemies of Wave III (Siege Equipment Ghost Count)**:
    - *The Mystery*: In Wave III, the counter said 3 enemies were left, but no soldiers appeared and the wave would never finish!
    - *The Fix*: The game was accidentally counting 2 wooden assault ladders and the Battering Ram as "enemy soldiers" in the HUD! When all soldiers were defeated, the counter got stuck waiting to kill wooden props! We separated siege equipment from soldiers, gave the Battering Ram a clean `destroyRam()` system that grants +80 Denarii, and made Wave III end in glorious victory!
-9. **🪜 The Frozen Ladder Climbers (Target Plan Locking & Smooth Climbing)**:
-   - *The Mystery*: When Greek soldiers ran up to assault ladders, some of them would suddenly freeze in place!
-   - *The Fix*: The enemy AI was flipping a coin 60 times a second deciding between the gate and the ladder, causing brain freezes! We locked in their decision once (`hasTargetPlan`), fixed the ground distance math so height didn't confuse them, added real climbing arm and leg swings, and taught them how to climb up onto the wall and run down the stairs!
+9. **🪜 The Frozen Ladder Climbers (3D Mesh Sync, Physics Falling & Clean Pathing)**:
+   - *The Mystery*: When Greek soldiers climbed ladders, some would freeze in mid-air, freeze at the top of the wall, or freeze at the foot of toppled ladders!
+   - *The Fix*: Four sneaky bugs were caught! (1) Early code `return;` statements were skipping the 3D model position updates on screen. (2) Defeated climbers were hovering frozen in mid-air; we added falling physics so they tumble to the grass! (3) Soldiers arriving at toppled ladders now immediately charge the central gate instead of freezing in place. (4) Hoplites queue up one at a time so they never merge into a single overlapping glitched soldier!
 
 ---
 
