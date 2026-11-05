@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { createPilumMesh, createRampartBoulder } from './models.js?v=2.4';
-import { soundEngine } from './audio.js?v=2.4';
+import { createPilumMesh, createRampartBoulder } from './models.js?v=2.5';
+import { soundEngine } from './audio.js?v=2.5';
 
 export class CombatSystem {
   constructor(scene, camera, player, enemyManager) {

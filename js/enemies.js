@@ -5,8 +5,8 @@ import {
   createGreekArcher, 
   createAssaultLadder, 
   createBatteringRamMesh 
-} from './models.js?v=2.4';
-import { soundEngine } from './audio.js?v=2.4';
+} from './models.js?v=2.5';
+import { soundEngine } from './audio.js?v=2.5';
 
 export class EnemyManager {
   constructor(scene, player, templeFortress) {
@@ -124,6 +124,7 @@ export class EnemyManager {
       attackTimer: 0,
       climbProgress: 0,
       assignedLadder: null,
+      hasTargetPlan: false,
       targetPos: new THREE.Vector3(0, 0, 0),
       animTime: Math.random() * 10
     };
@@ -329,38 +330,55 @@ export class EnemyManager {
       // STATE MACHINE:
       // A. Advancing across battlefield
       if (enemy.state === 'advancing') {
-        // Check if there is an active ladder nearby to climb
-        if (enemy.type === 'hoplite') {
-          const availableLadder = this.ladders.find(l => !l.isPushedDown && Math.abs(l.x - enemy.position.x) < 18);
-          if (availableLadder && Math.random() < 0.7) {
-            enemy.assignedLadder = availableLadder;
-            enemy.targetPos.set(availableLadder.x, 0, availableLadder.z);
-          } else {
-            // Target the gate
-            enemy.targetPos.set((Math.random() - 0.5) * 6, 0, 3.2);
-          }
-        } else if (enemy.type === 'boss') {
-          // Boss targets the gate to smash through
-          enemy.targetPos.set(0, 0, 3.5);
-        } else if (enemy.type === 'peltast' || enemy.type === 'archer') {
-          // Skirmishers stop at range (14 to 28m from wall)
-          enemy.targetPos.set(enemy.position.x, 0, 16 + Math.random() * 10);
+        // Drop smoothly to ground level if airborne from ladder push or knockback
+        if (enemy.position.y > 0.05) {
+          enemy.position.y = Math.max(0, enemy.position.y - 14 * delta);
         }
 
-        // Move toward targetPos
-        const toTarget = enemy.targetPos.clone().sub(enemy.position);
-        toTarget.y = 0;
-        const dist = toTarget.length();
+        // Pick a target plan ONCE (prevents 60Hz jittering between gate and ladder)
+        if (!enemy.hasTargetPlan) {
+          enemy.hasTargetPlan = true;
+          if (enemy.type === 'hoplite') {
+            const availableLadder = this.ladders.find(l => !l.isPushedDown && Math.abs(l.x - enemy.position.x) < 26);
+            if (availableLadder && Math.random() < 0.65) {
+              enemy.assignedLadder = availableLadder;
+              enemy.targetPos.set(availableLadder.x, 0, availableLadder.z + 0.1);
+            } else {
+              enemy.assignedLadder = null;
+              enemy.targetPos.set((Math.random() - 0.5) * 6, 0, 3.2);
+            }
+          } else if (enemy.type === 'boss') {
+            enemy.targetPos.set(0, 0, 3.5);
+          } else if (enemy.type === 'peltast' || enemy.type === 'archer') {
+            enemy.targetPos.set(enemy.position.x, 0, 16 + Math.random() * 10);
+          }
+        }
 
-        if (dist > 1.2) {
-          toTarget.normalize();
-          enemy.position.addScaledVector(toTarget, enemy.speed * delta);
-          enemy.mesh.rotation.y = Math.atan2(toTarget.x, toTarget.z);
+        // If assigned ladder was pushed down before reaching it, re-route to gate!
+        if (enemy.assignedLadder && enemy.assignedLadder.isPushedDown) {
+          enemy.assignedLadder = null;
+          enemy.targetPos.set((Math.random() - 0.5) * 6, 0, 3.2);
+        }
+
+        // Calculate horizontal distance (Y height doesn't block pathfinding)
+        const dx = enemy.targetPos.x - enemy.position.x;
+        const dz = enemy.targetPos.z - enemy.position.z;
+        const horizDist = Math.sqrt(dx * dx + dz * dz);
+
+        if (horizDist > 0.8) {
+          const moveX = (dx / horizDist) * enemy.speed * delta;
+          const moveZ = (dz / horizDist) * enemy.speed * delta;
+          enemy.position.x += moveX;
+          enemy.position.z += moveZ;
+          enemy.mesh.rotation.y = Math.atan2(dx, dz);
         } else {
-          // Reached target: transition state
+          // Reached target destination!
           if (enemy.assignedLadder && !enemy.assignedLadder.isPushedDown) {
             enemy.state = 'climbing';
             enemy.climbProgress = 0;
+            enemy.position.x = enemy.assignedLadder.x;
+            enemy.position.z = enemy.assignedLadder.z;
+            enemy.position.y = 0;
           } else if (enemy.type === 'hoplite' || enemy.type === 'boss') {
             enemy.state = 'attacking_gate';
           } else {
@@ -374,18 +392,37 @@ export class EnemyManager {
         if (!enemy.assignedLadder || enemy.assignedLadder.isPushedDown) {
           enemy.state = 'advancing';
           enemy.assignedLadder = null;
+          enemy.hasTargetPlan = false;
           return;
         }
 
-        enemy.climbProgress += delta * 0.35; // Takes ~3s to climb
-        enemy.position.y = enemy.climbProgress * 7.2;
+        // Face the wall while climbing ladder (facing -Z towards parapet)
+        enemy.mesh.rotation.y = Math.PI;
+
+        // Climbing arm & leg movement animation
+        if (enemy.modelData && enemy.modelData.legLGroup && enemy.modelData.rightArmGroup) {
+          const climbCycle = Math.sin(enemy.animTime * 1.5);
+          enemy.modelData.legLGroup.rotation.x = climbCycle * 0.7;
+          enemy.modelData.legRGroup.rotation.x = -climbCycle * 0.7;
+          enemy.modelData.rightArmGroup.rotation.x = -climbCycle * 0.5 + 0.4;
+        }
+
+        enemy.climbProgress += delta * 0.38; // Climbs to top in ~2.6 seconds
+        enemy.position.y = Math.min(7.2, enemy.climbProgress * 7.2);
         enemy.position.x = enemy.assignedLadder.x;
-        enemy.position.z = THREE.MathUtils.lerp(enemy.assignedLadder.z, 2.0, enemy.climbProgress);
+        // Follow ladder lean from z = 3.2 at base to z = 2.2 at rampart top
+        enemy.position.z = THREE.MathUtils.lerp(enemy.assignedLadder.z, 2.2, Math.min(1.0, enemy.climbProgress));
 
         if (enemy.climbProgress >= 1.0) {
           // Successfully mounted the parapet wall!
-          enemy.position.set(enemy.assignedLadder.x, 7.2, 1.8);
+          enemy.position.set(enemy.assignedLadder.x, 7.2, 1.4);
+          enemy.assignedLadder = null;
           enemy.state = 'melee_player';
+
+          // Reset arms from climbing pose
+          if (enemy.modelData && enemy.modelData.rightArmGroup) {
+            enemy.modelData.rightArmGroup.rotation.x = 0;
+          }
         }
       }
 
@@ -400,7 +437,7 @@ export class EnemyManager {
           if (enemy.modelData && enemy.modelData.rightArmGroup) {
             enemy.modelData.rightArmGroup.rotation.x = Math.PI / 3;
             setTimeout(() => {
-              if (enemy.modelData) enemy.modelData.rightArmGroup.rotation.x = 0;
+              if (enemy.modelData && enemy.modelData.rightArmGroup) enemy.modelData.rightArmGroup.rotation.x = 0;
             }, 250);
           }
         }
@@ -413,30 +450,49 @@ export class EnemyManager {
 
       // D. Close Quarters Melee with Player
       else if (enemy.state === 'melee_player') {
-        // If enemy is on the ground but player climbed back up to the wall, resume attacking the gate!
+        const toPlayer = playerPos.clone().sub(enemy.position);
+        const verticalDiff = Math.abs(playerPos.y - enemy.position.y);
+        const horizDist = Math.sqrt(toPlayer.x * toPlayer.x + toPlayer.z * toPlayer.z);
+
+        // If enemy is on the rampart (y > 5.0) but player is down in courtyard/gate (y < 3.0):
+        if (enemy.position.y > 5.0 && playerPos.y < 3.0) {
+          // Move towards the nearest staircase (-14 or +14) to descend to the player!
+          const stairX = enemy.position.x < 0 ? -14 : 14;
+          const toStair = stairX - enemy.position.x;
+          if (Math.abs(toStair) > 1.2) {
+            enemy.position.x += Math.sign(toStair) * enemy.speed * delta;
+            enemy.mesh.rotation.y = toStair > 0 ? Math.PI / 2 : -Math.PI / 2;
+          } else {
+            // Walk down the stairs
+            enemy.position.z -= enemy.speed * delta;
+            if (enemy.position.z < -4.0) {
+              enemy.position.y = 0;
+              enemy.position.z = -6.0;
+            }
+          }
+          return;
+        }
+
+        // If enemy is on the ground (y < 3.0) but player climbed back up to the wall (y > 5.0):
         if (enemy.position.y < 3.0 && playerPos.y > 5.0) {
           enemy.state = (enemy.type === 'peltast' || enemy.type === 'archer') ? 'ranged_attack' : 'attacking_gate';
           return;
         }
 
-        const toPlayer = playerPos.clone().sub(enemy.position);
-        const distToPlayer = toPlayer.length();
-        const verticalDiff = Math.abs(playerPos.y - enemy.position.y);
-
         enemy.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
 
-        if (distToPlayer > 2.0) {
+        if (horizDist > 1.8) {
           toPlayer.y = 0;
           toPlayer.normalize();
           enemy.position.addScaledVector(toPlayer, enemy.speed * delta);
 
-          // Constrain enemies on the ramparts so they don't fall off or float behind the wall
+          // Constrain enemies on the ramparts so they don't fall off
           if (enemy.position.y > 5.0) {
             enemy.position.z = Math.max(-1.6, Math.min(1.8, enemy.position.z));
             enemy.position.x = Math.max(-38.0, Math.min(38.0, enemy.position.x));
           }
         } else {
-          // Strike Player (only if within vertical melee reach)
+          // Strike Player (only if within reach)
           if (enemy.attackTimer >= enemy.attackCooldown && verticalDiff < 2.5) {
             enemy.attackTimer = 0;
             const dmg = enemy.type === 'boss' ? 32 : 16;
@@ -446,7 +502,7 @@ export class EnemyManager {
             if (enemy.modelData && enemy.modelData.rightArmGroup) {
               enemy.modelData.rightArmGroup.rotation.x = Math.PI / 2.5;
               setTimeout(() => {
-                if (enemy.modelData) enemy.modelData.rightArmGroup.rotation.x = 0;
+                if (enemy.modelData && enemy.modelData.rightArmGroup) enemy.modelData.rightArmGroup.rotation.x = 0;
               }, 200);
             }
           }
