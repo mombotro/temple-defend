@@ -5,8 +5,8 @@ import {
   createGreekArcher, 
   createAssaultLadder, 
   createBatteringRamMesh 
-} from './models.js?v=2.8';
-import { soundEngine } from './audio.js?v=2.8';
+} from './models.js?v=2.9';
+import { soundEngine } from './audio.js?v=2.9';
 
 export class EnemyManager {
   constructor(scene, player, templeFortress) {
@@ -297,13 +297,13 @@ export class EnemyManager {
       const progress = (z - (-14.6)) / (-1.6 - (-14.6));
       return THREE.MathUtils.clamp(progress * 7.2, 0.0, 7.2);
     }
-    // 3. Temple podium terrace behind the wall
-    if (Math.abs(x) <= 13 && z <= -15 && z >= -48) {
+    // 3. Temple podium terrace behind the wall (shifted to z = -35)
+    if (Math.abs(x) <= 11.5 && z <= -18 && z >= -51) {
       return 2.5;
     }
-    // 4. Temple front steps
-    if (Math.abs(x) <= 8 && z > -15 && z <= -10) {
-      const stepT = (-10 - z) / 5.0;
+    // 4. Temple front steps (leading from z = -18 down to z = -13 in courtyard)
+    if (Math.abs(x) <= 7 && z > -18 && z <= -13) {
+      const stepT = (-13 - z) / 5.0;
       return stepT * 2.5;
     }
     // 5. Courtyard and battlefield ground
@@ -534,14 +534,15 @@ export class EnemyManager {
         const verticalDiff = Math.abs(playerPos.y - enemy.position.y);
         const horizDist = Math.sqrt(toPlayer.x * toPlayer.x + toPlayer.z * toPlayer.z);
 
+        enemy.stairAction = enemy.stairAction || 'none'; // 'none', 'descending', 'ascending'
         const onWall = (enemy.position.y > 5.0 && enemy.position.z >= -2.1 && enemy.position.z <= 2.1);
-        const nearStairs = (Math.abs(enemy.position.x - (-14)) < 2.2 || Math.abs(enemy.position.x - 14) < 2.2);
-        const onStair = nearStairs && (enemy.position.z < -1.6 && enemy.position.z > -14.6);
+        const onStair = (enemy.stairAction === 'descending' || enemy.stairAction === 'ascending');
         const playerOnWall = (playerPos.y > 5.0 && Math.abs(playerPos.x) <= 42 && playerPos.z >= -2.4 && playerPos.z <= 2.4);
         const playerOnGround = (playerPos.y < 3.0);
 
         // CASE 1: Enemy is on the rampart wall walkway
         if (onWall) {
+          enemy.stairAction = 'none';
           if (playerOnWall) {
             // Player is also on the wall: pursue player directly along the walkway
             enemy.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
@@ -582,6 +583,7 @@ export class EnemyManager {
               enemy.mesh.rotation.y = toStair > 0 ? Math.PI / 2 : -Math.PI / 2;
             } else {
               // Step onto top of stairs into -Z
+              enemy.stairAction = 'descending';
               enemy.position.x = THREE.MathUtils.clamp(enemy.position.x, stairX - 0.7, stairX + 0.7);
               enemy.position.z -= enemy.speed * delta;
               enemy.mesh.rotation.y = Math.PI;
@@ -591,25 +593,34 @@ export class EnemyManager {
           }
         }
 
-        // CASE 2: Enemy is actively on the stairs (-14.6 < z < -1.6)
+        // CASE 2: Enemy is actively on the stairs (-14.6 <= z <= -1.6)
         else if (onStair) {
           enemy.isMoving = true;
           const stairX = enemy.position.x < 0 ? -14 : 14;
           enemy.position.x = THREE.MathUtils.clamp(enemy.position.x, stairX - 0.7, stairX + 0.7);
 
-          if (playerOnGround || playerPos.y <= enemy.position.y) {
+          // If player changed vertical position, adapt stair direction
+          if (playerOnWall || (!playerOnGround && playerPos.y > enemy.position.y)) {
+            enemy.stairAction = 'ascending';
+          } else if (playerOnGround || playerPos.y <= enemy.position.y) {
+            enemy.stairAction = 'descending';
+          }
+
+          if (enemy.stairAction === 'descending') {
             // Walk down the stairs (-Z towards courtyard)
             enemy.position.z -= enemy.speed * delta;
             enemy.mesh.rotation.y = Math.PI;
             const t = (enemy.position.z - (-14.6)) / (-1.6 - (-14.6));
             enemy.position.y = THREE.MathUtils.clamp(t * 7.2, 0.0, 7.2);
             if (enemy.position.z <= -14.6) {
-              // Reached courtyard ground!
+              // Reached courtyard ground! Step out into clear courtyard plaza
               enemy.position.y = 0.0;
-              enemy.position.z = -15.0;
+              enemy.position.z = -15.5;
+              enemy.position.x += (stairX < 0 ? 2.0 : -2.0);
+              enemy.stairAction = 'none';
             }
           } else {
-            // Player retreated back up to wall: walk UP the stairs (+Z towards wall)
+            // Walk UP the stairs (+Z towards wall)
             enemy.position.z += enemy.speed * delta;
             enemy.mesh.rotation.y = 0;
             const t = (enemy.position.z - (-14.6)) / (-1.6 - (-14.6));
@@ -618,6 +629,7 @@ export class EnemyManager {
               // Reached wall walkway!
               enemy.position.y = 7.2;
               enemy.position.z = -1.2;
+              enemy.stairAction = 'none';
             }
           }
         }
@@ -643,6 +655,7 @@ export class EnemyManager {
                 // Step onto bottom of stairs
                 enemy.position.x = stairX;
                 enemy.position.z = -14.4;
+                enemy.stairAction = 'ascending';
               }
               enemy.position.y = this.calculateTerrainHeight(enemy.position.x, enemy.position.z);
             } else {
@@ -655,12 +668,29 @@ export class EnemyManager {
             if (enemy.position.z >= 2.0 && playerPos.z < -2.0) {
               enemy.state = 'attacking_gate';
             } else {
-              enemy.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+              // Steering logic for ground combat
+              let pursueX = toPlayer.x;
+              let pursueZ = toPlayer.z;
+
+              // If player is on the elevated temple terrace (z <= -18), enemies in the courtyard navigate to the front steps first
+              if (playerPos.z <= -18.0 && Math.abs(playerPos.x) <= 11.5 && enemy.position.z > -16.0) {
+                const toStepsX = 0 - enemy.position.x;
+                const toStepsZ = -13.0 - enemy.position.z;
+                const distSteps = Math.sqrt(toStepsX * toStepsX + toStepsZ * toStepsZ);
+                if (distSteps > 0.8) {
+                  pursueX = toStepsX;
+                  pursueZ = toStepsZ;
+                }
+              }
+
+              enemy.mesh.rotation.y = Math.atan2(pursueX, pursueZ);
               if (horizDist > 1.8) {
                 enemy.isMoving = true;
-                toPlayer.y = 0;
-                toPlayer.normalize();
-                enemy.position.addScaledVector(toPlayer, enemy.speed * delta);
+                const moveLen = Math.sqrt(pursueX * pursueX + pursueZ * pursueZ);
+                if (moveLen > 0.001) {
+                  enemy.position.x += (pursueX / moveLen) * enemy.speed * delta;
+                  enemy.position.z += (pursueZ / moveLen) * enemy.speed * delta;
+                }
 
                 // Greek ground collision: prevent penetrating stone wall and sally port doorways
                 if (Math.abs(enemy.position.x) >= 4.5 && Math.abs(enemy.position.x) <= 44.0) {
@@ -669,6 +699,18 @@ export class EnemyManager {
                   } else if (enemy.position.z > -2.3 && enemy.position.z <= 0) {
                     enemy.position.z = -2.3;
                   }
+                }
+
+                // Temple podium solid sides: enemies cannot walk through the 2.5m marble vertical wall from the courtyard floor
+                if (enemy.position.y < 2.0 && enemy.position.z <= -18.0 && enemy.position.z >= -51.0) {
+                  if (enemy.position.x > -12.2 && enemy.position.x < 0) enemy.position.x = -12.2;
+                  if (enemy.position.x < 12.2 && enemy.position.x >= 0) enemy.position.x = 12.2;
+                }
+
+                // Temple Cella sanctuary solid room collision
+                if (Math.abs(enemy.position.x) < 9.5 && enemy.position.z >= -47.0 && enemy.position.z <= -25.0) {
+                  if (enemy.position.z > -36) enemy.position.z = -24.8;
+                  else enemy.position.z = -47.2;
                 }
 
                 enemy.position.y = this.calculateTerrainHeight(enemy.position.x, enemy.position.z);

@@ -1078,18 +1078,18 @@ export function createTempleAndFortress() {
 
   // --- THE CLASSICAL ROMAN TEMPLE (Behind the Wall) ---
   const templeGroup = new THREE.Group();
-  templeGroup.position.set(0, 0, -32);
+  templeGroup.position.set(0, 0, -35);
 
-  // Podium base
-  const podiumGeo = new THREE.BoxGeometry(26, 2.5, 34);
+  // Podium base (width 23, depth 34: z from -52 to -18, x from -11.5 to +11.5 - leaves clear plaza in front of stairs)
+  const podiumGeo = new THREE.BoxGeometry(23, 2.5, 34);
   const podium = new THREE.Mesh(podiumGeo, materials.marbleLight);
   podium.position.y = 1.25;
   podium.receiveShadow = true;
   templeGroup.add(podium);
 
-  // Front Steps
+  // Front Steps (leads down from z = -18 down to z = -13.2 in courtyard)
   for (let st = 0; st < 6; st++) {
-    const step = new THREE.Mesh(new THREE.BoxGeometry(16, 0.4, 0.8), materials.marbleLight);
+    const step = new THREE.Mesh(new THREE.BoxGeometry(14, 0.4, 0.8), materials.marbleLight);
     step.position.set(0, st * 0.4 + 0.2, 17 + (6 - st) * 0.8);
     step.receiveShadow = true;
     templeGroup.add(step);
@@ -1098,9 +1098,9 @@ export function createTempleAndFortress() {
   // Fluted Marble Columns (6 along front, 6 along back, 4 along sides)
   const colGeo = new THREE.CylinderGeometry(0.65, 0.7, 9.5, 14);
   const colPositions = [
-    [-10, 7.25, 14], [-6, 7.25, 14], [-2, 7.25, 14], [2, 7.25, 14], [6, 7.25, 14], [10, 7.25, 14], // Front
-    [-10, 7.25, -14], [-6, 7.25, -14], [-2, 7.25, -14], [2, 7.25, -14], [6, 7.25, -14], [10, 7.25, -14], // Back
-    [-10, 7.25, 6], [-10, 7.25, -4], [10, 7.25, 6], [10, 7.25, -4] // Sides
+    [-9.5, 7.25, 14], [-5.7, 7.25, 14], [-1.9, 7.25, 14], [1.9, 7.25, 14], [5.7, 7.25, 14], [9.5, 7.25, 14], // Front
+    [-9.5, 7.25, -14], [-5.7, 7.25, -14], [-1.9, 7.25, -14], [1.9, 7.25, -14], [5.7, 7.25, -14], [9.5, 7.25, -14], // Back
+    [-9.5, 7.25, 6], [-9.5, 7.25, -4], [9.5, 7.25, 6], [9.5, 7.25, -4] // Sides
   ];
   colPositions.forEach(pos => {
     const col = new THREE.Mesh(colGeo, materials.marbleLight);
@@ -1118,13 +1118,13 @@ export function createTempleAndFortress() {
   templeGroup.add(cella);
 
   // Pediment / Roof
-  const entablatureGeo = new THREE.BoxGeometry(27, 1.2, 35);
+  const entablatureGeo = new THREE.BoxGeometry(24, 1.2, 35);
   const entablature = new THREE.Mesh(entablatureGeo, materials.marbleLight);
   entablature.position.set(0, 12.6, 0);
   templeGroup.add(entablature);
 
   // Triangular Pediment Front
-  const pedimentGeo = new THREE.CylinderGeometry(14, 14, 0.8, 3);
+  const pedimentGeo = new THREE.CylinderGeometry(12.5, 12.5, 0.8, 3);
   const pediment = new THREE.Mesh(pedimentGeo, materials.marbleLight);
   pediment.rotation.z = Math.PI;
   pediment.rotation.x = Math.PI / 2;
@@ -1132,7 +1132,7 @@ export function createTempleAndFortress() {
   templeGroup.add(pediment);
 
   // Terracotta Tile Roof
-  const roofGeo = new THREE.ConeGeometry(20, 4.5, 4);
+  const roofGeo = new THREE.ConeGeometry(18, 4.5, 4);
   roofGeo.scale(0.75, 1, 1);
   const roof = new THREE.Mesh(roofGeo, materials.templeRoofTile);
   roof.rotation.y = Math.PI / 4;

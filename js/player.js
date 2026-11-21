@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { createRomanCenturion } from './models.js?v=2.8';
-import { soundEngine } from './audio.js?v=2.8';
+import { createRomanCenturion } from './models.js?v=2.9';
+import { soundEngine } from './audio.js?v=2.9';
 
 export class Player {
   constructor(scene, camera, domElement) {
@@ -62,7 +62,7 @@ export class Player {
       // End right bastion tower
       { minX: 37.8, maxX: 46.2, minZ: -4.2, maxZ: 4.2 },
       // Temple Sanctuary Cella (solid marble building behind wall)
-      { minX: -9.5, maxX: 9.5, minZ: -44.0, maxZ: -22.0 }
+      { minX: -9.5, maxX: 9.5, minZ: -47.0, maxZ: -25.0 }
     ];
 
     this.sallyPortDoors = [];
@@ -513,10 +513,10 @@ export class Player {
         newZ = testZ;
 
         // Ground / Podium height
-        if (newZ <= -15 && Math.abs(newX) <= 13) {
+        if (newZ <= -18 && Math.abs(newX) <= 11.5) {
           newY = 2.5; // On temple terrace
-        } else if (newZ > -15 && newZ <= -10 && Math.abs(newX) <= 8) {
-          const stepT = (-10 - newZ) / 5.0;
+        } else if (newZ > -18 && newZ <= -13 && Math.abs(newX) <= 7) {
+          const stepT = (-13 - newZ) / 5.0;
           newY = stepT * 2.5; // Temple front steps
         } else {
           newY = 0.0; // Courtyard or battlefield ground
@@ -543,8 +543,12 @@ export class Player {
       const progress = (z - (-14.6)) / (-2.4 - (-14.6));
       return THREE.MathUtils.clamp(progress * 7.2, 0, 7.2);
     }
-    if (Math.abs(x) <= 13 && z <= -15 && z >= -48) {
+    if (Math.abs(x) <= 11.5 && z <= -18 && z >= -51) {
       return 2.5;
+    }
+    if (Math.abs(x) <= 7 && z > -18 && z <= -13) {
+      const stepT = (-13 - z) / 5.0;
+      return stepT * 2.5;
     }
     return 0.0;
   }
