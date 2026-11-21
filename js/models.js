@@ -917,10 +917,10 @@ export function createTempleAndFortress() {
     fortressGroup.add(merlon);
   }
 
-  // Rear Safety Railing on Parapet
-  const railL = new THREE.Mesh(new THREE.BoxGeometry(segWidth, 1.0, 0.4), materials.stoneDark);
+  // Rear Safety Railing on Parapet (each side wall is 36m long from |x|=6 to 42)
+  const railL = new THREE.Mesh(new THREE.BoxGeometry(36, 1.0, 0.4), materials.stoneDark);
   railL.position.set(-24, wallHeight + 0.5, -wallDepth / 2 + 0.2);
-  const railR = new THREE.Mesh(new THREE.BoxGeometry(segWidth, 1.0, 0.4), materials.stoneDark);
+  const railR = new THREE.Mesh(new THREE.BoxGeometry(36, 1.0, 0.4), materials.stoneDark);
   railR.position.set(24, wallHeight + 0.5, -wallDepth / 2 + 0.2);
   fortressGroup.add(railL, railR);
 

@@ -5,8 +5,8 @@ import {
   createGreekArcher, 
   createAssaultLadder, 
   createBatteringRamMesh 
-} from './models.js?v=2.9';
-import { soundEngine } from './audio.js?v=2.9';
+} from './models.js?v=3.0';
+import { soundEngine } from './audio.js?v=3.0';
 
 export class EnemyManager {
   constructor(scene, player, templeFortress) {
@@ -732,6 +732,7 @@ export class EnemyManager {
           }
         }
       }
+    }
 
       // E. Ranged Attack (Peltasts & Archers)
       else if (enemy.state === 'ranged_attack') {
