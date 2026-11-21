@@ -5,8 +5,8 @@ import {
   createGreekArcher, 
   createAssaultLadder, 
   createBatteringRamMesh 
-} from './models.js?v=2.7';
-import { soundEngine } from './audio.js?v=2.7';
+} from './models.js?v=2.8';
+import { soundEngine } from './audio.js?v=2.8';
 
 export class EnemyManager {
   constructor(scene, player, templeFortress) {
@@ -150,6 +150,17 @@ export class EnemyManager {
     let ladderX = targetX;
     if (Math.abs(ladderX) < 14) ladderX = (ladderX < 0 ? -18 : 18);
     ladderX = Math.max(-34, Math.min(34, ladderX));
+
+    // Keep ladders away from sally port doors (x = -32, -20, 20, 32)
+    const doorXPositions = [-32, -20, 20, 32];
+    for (const dX of doorXPositions) {
+      if (Math.abs(ladderX - dX) < 1.6) {
+        if (dX === -32) ladderX = -28;
+        else if (dX === -20) ladderX = (ladderX < -20 ? -24 : -16);
+        else if (dX === 20) ladderX = (ladderX > 20 ? 24 : 16);
+        else if (dX === 32) ladderX = 28;
+      }
+    }
 
     const ladderMesh = createAssaultLadder();
     // Position ladder leaning against the front of the wall
@@ -640,14 +651,28 @@ export class EnemyManager {
             }
           } else {
             // Both on ground level: pursuit & melee combat
-            enemy.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
-            if (horizDist > 1.8) {
-              enemy.isMoving = true;
-              toPlayer.y = 0;
-              toPlayer.normalize();
-              enemy.position.addScaledVector(toPlayer, enemy.speed * delta);
-              enemy.position.y = this.calculateTerrainHeight(enemy.position.x, enemy.position.z);
+            // If player escaped through sally port / wall to courtyard, enemies outside cannot follow through sally ports
+            if (enemy.position.z >= 2.0 && playerPos.z < -2.0) {
+              enemy.state = 'attacking_gate';
             } else {
+              enemy.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+              if (horizDist > 1.8) {
+                enemy.isMoving = true;
+                toPlayer.y = 0;
+                toPlayer.normalize();
+                enemy.position.addScaledVector(toPlayer, enemy.speed * delta);
+
+                // Greek ground collision: prevent penetrating stone wall and sally port doorways
+                if (Math.abs(enemy.position.x) >= 4.5 && Math.abs(enemy.position.x) <= 44.0) {
+                  if (enemy.position.z < 2.3 && enemy.position.z > 0) {
+                    enemy.position.z = 2.3;
+                  } else if (enemy.position.z > -2.3 && enemy.position.z <= 0) {
+                    enemy.position.z = -2.3;
+                  }
+                }
+
+                enemy.position.y = this.calculateTerrainHeight(enemy.position.x, enemy.position.z);
+              } else {
               enemy.isMoving = false;
               // Strike player
               if (enemy.attackTimer >= enemy.attackCooldown && verticalDiff < 2.5) {

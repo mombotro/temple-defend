@@ -741,20 +741,167 @@ export function createTempleAndFortress() {
   const wallHeight = 7.2;
   const wallDepth = 4.2;
 
-  // Left & Right Wall segments with center gap for Gate
-  const segWidth = 36;
-  const wallLGeo = new THREE.BoxGeometry(segWidth, wallHeight, wallDepth);
-  const wallL = new THREE.Mesh(wallLGeo, materials.stoneMasonry);
-  wallL.position.set(-24, wallHeight / 2, 0);
-  wallL.castShadow = true;
-  wallL.receiveShadow = true;
+  // Doorway dimensions for Sally Ports (Side Doors)
+  const doorW = 2.2;
+  const doorH = 3.2;
+  const lintelH = wallHeight - doorH; // 4.0m
+  const lintelY = doorH + lintelH / 2; // 5.2m
 
-  const wallR = new THREE.Mesh(wallLGeo, materials.stoneMasonry);
-  wallR.position.set(24, wallHeight / 2, 0);
-  wallR.castShadow = true;
-  wallR.receiveShadow = true;
+  // Left Wall segments (Outer: -42 to -33.1, Mid: -30.9 to -21.1, Inner: -18.9 to -6)
+  const wallL_outer = new THREE.Mesh(new THREE.BoxGeometry(8.9, wallHeight, wallDepth), materials.stoneMasonry);
+  wallL_outer.position.set(-37.55, wallHeight / 2, 0);
+  wallL_outer.castShadow = true;
+  wallL_outer.receiveShadow = true;
 
-  fortressGroup.add(wallL, wallR);
+  const wallL_mid = new THREE.Mesh(new THREE.BoxGeometry(9.8, wallHeight, wallDepth), materials.stoneMasonry);
+  wallL_mid.position.set(-26.0, wallHeight / 2, 0);
+  wallL_mid.castShadow = true;
+  wallL_mid.receiveShadow = true;
+
+  const wallL_inner = new THREE.Mesh(new THREE.BoxGeometry(12.9, wallHeight, wallDepth), materials.stoneMasonry);
+  wallL_inner.position.set(-12.45, wallHeight / 2, 0);
+  wallL_inner.castShadow = true;
+  wallL_inner.receiveShadow = true;
+
+  // Lintels spanning above Door L2 and L1 (Rampart walkway floor flush at y = 7.2)
+  const lintelL2 = new THREE.Mesh(new THREE.BoxGeometry(doorW, lintelH, wallDepth), materials.stoneMasonry);
+  lintelL2.position.set(-32, lintelY, 0);
+  lintelL2.castShadow = true;
+  lintelL2.receiveShadow = true;
+
+  const lintelL1 = new THREE.Mesh(new THREE.BoxGeometry(doorW, lintelH, wallDepth), materials.stoneMasonry);
+  lintelL1.position.set(-20, lintelY, 0);
+  lintelL1.castShadow = true;
+  lintelL1.receiveShadow = true;
+
+  fortressGroup.add(wallL_outer, wallL_mid, wallL_inner, lintelL2, lintelL1);
+
+  // Right Wall segments (Inner: 6 to 18.9, Mid: 21.1 to 30.9, Outer: 33.1 to 42)
+  const wallR_inner = new THREE.Mesh(new THREE.BoxGeometry(12.9, wallHeight, wallDepth), materials.stoneMasonry);
+  wallR_inner.position.set(12.45, wallHeight / 2, 0);
+  wallR_inner.castShadow = true;
+  wallR_inner.receiveShadow = true;
+
+  const wallR_mid = new THREE.Mesh(new THREE.BoxGeometry(9.8, wallHeight, wallDepth), materials.stoneMasonry);
+  wallR_mid.position.set(26.0, wallHeight / 2, 0);
+  wallR_mid.castShadow = true;
+  wallR_mid.receiveShadow = true;
+
+  const wallR_outer = new THREE.Mesh(new THREE.BoxGeometry(8.9, wallHeight, wallDepth), materials.stoneMasonry);
+  wallR_outer.position.set(37.55, wallHeight / 2, 0);
+  wallR_outer.castShadow = true;
+  wallR_outer.receiveShadow = true;
+
+  // Lintels spanning above Door R1 and R2
+  const lintelR1 = new THREE.Mesh(new THREE.BoxGeometry(doorW, lintelH, wallDepth), materials.stoneMasonry);
+  lintelR1.position.set(20, lintelY, 0);
+  lintelR1.castShadow = true;
+  lintelR1.receiveShadow = true;
+
+  const lintelR2 = new THREE.Mesh(new THREE.BoxGeometry(doorW, lintelH, wallDepth), materials.stoneMasonry);
+  lintelR2.position.set(32, lintelY, 0);
+  lintelR2.castShadow = true;
+  lintelR2.receiveShadow = true;
+
+  fortressGroup.add(wallR_inner, wallR_mid, wallR_outer, lintelR1, lintelR2);
+
+  // Sally Port Side Doors Array (2 on Left Wall, 2 on Right Wall = 4 Total)
+  const sallyPortDoors = [];
+
+  function createSallyPortDoor(doorX, hingeSide = 'left') {
+    const doorGroup = new THREE.Group();
+    doorGroup.position.set(doorX, 0, 0);
+
+    // Stone Arch Frame Surroundings (Front and Back tunnel portals)
+    [-wallDepth / 2 + 0.1, wallDepth / 2 - 0.1].forEach(archZ => {
+      // Left jamb
+      const jambGeo = new THREE.BoxGeometry(0.32, doorH, 0.4);
+      const jambL = new THREE.Mesh(jambGeo, materials.stoneDark);
+      jambL.position.set(-doorW / 2 + 0.16, doorH / 2, archZ);
+      jambL.castShadow = true;
+      // Right jamb
+      const jambR = new THREE.Mesh(jambGeo, materials.stoneDark);
+      jambR.position.set(doorW / 2 - 0.16, doorH / 2, archZ);
+      jambR.castShadow = true;
+      // Arch header
+      const archHeadGeo = new THREE.BoxGeometry(doorW + 0.2, 0.4, 0.45);
+      const archHead = new THREE.Mesh(archHeadGeo, materials.stoneDark);
+      archHead.position.set(0, doorH + 0.15, archZ);
+      archHead.castShadow = true;
+      doorGroup.add(jambL, jambR, archHead);
+    });
+
+    // Hinge Pivot Group (placed at edge of doorway so door swings naturally)
+    const hingePivot = new THREE.Group();
+    const pivotOffsetX = (hingeSide === 'left') ? -doorW / 2 + 0.1 : doorW / 2 - 0.1;
+    hingePivot.position.set(pivotOffsetX, 0, 0);
+
+    // Door Leaf Panel (oak wood reinforced with iron)
+    const panelW = doorW - 0.15;
+    const panelGeo = new THREE.BoxGeometry(panelW, doorH - 0.1, 0.22);
+    const panel = new THREE.Mesh(panelGeo, materials.gateWood);
+    const panelOffsetX = (hingeSide === 'left') ? panelW / 2 : -panelW / 2;
+    panel.position.set(panelOffsetX, doorH / 2, 0);
+    panel.castShadow = true;
+    panel.receiveShadow = true;
+    hingePivot.add(panel);
+
+    // Heavy iron cross-bands
+    [-0.9, 0, 0.9].forEach(yOffset => {
+      const ironBand = new THREE.Mesh(new THREE.BoxGeometry(panelW + 0.04, 0.16, 0.26), materials.ironBand);
+      ironBand.position.set(panelOffsetX, doorH / 2 + yOffset, 0);
+      hingePivot.add(ironBand);
+
+      // Bronze studs
+      [-0.55, -0.18, 0.18, 0.55].forEach(xOffset => {
+        const stud = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.30, 8), materials.romanGold);
+        stud.rotation.x = Math.PI / 2;
+        stud.position.set(panelOffsetX + xOffset, doorH / 2 + yOffset, 0);
+        hingePivot.add(stud);
+      });
+    });
+
+    // Roman Brass Ring Knocker & Medallion on both sides (Courtyard and Battlefield)
+    [-0.14, 0.14].forEach(zOffset => {
+      const med = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.04, 12), materials.romanGold);
+      med.rotation.x = Math.PI / 2;
+      med.position.set(panelOffsetX, doorH / 2, zOffset);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.10, 0.022, 8, 16), materials.romanGold);
+      ring.position.set(panelOffsetX, doorH / 2 - 0.08, zOffset + (zOffset > 0 ? 0.02 : -0.02));
+      hingePivot.add(med, ring);
+    });
+
+    doorGroup.add(hingePivot);
+    fortressGroup.add(doorGroup);
+
+    const doorObj = {
+      x: doorX,
+      width: doorW,
+      height: doorH,
+      hingeSide,
+      pivot: hingePivot,
+      group: doorGroup,
+      isOpen: false,
+      openProgress: 0.0,
+      targetAngle: (hingeSide === 'left') ? -Math.PI / 2 : Math.PI / 2,
+      obstacle: {
+        minX: doorX - doorW / 2,
+        maxX: doorX + doorW / 2,
+        minZ: -0.4,
+        maxZ: 0.4,
+        isDoor: true,
+        disabled: false
+      }
+    };
+    sallyPortDoors.push(doorObj);
+    return doorObj;
+  }
+
+  // Build the 4 Sally Port Doors (2 on left, 2 on right)
+  createSallyPortDoor(-32, 'left');
+  createSallyPortDoor(-20, 'left');
+  createSallyPortDoor(20, 'right');
+  createSallyPortDoor(32, 'right');
 
   // Parapet Crenellations (Battlements with arrow slits)
   const merlonCount = 20;
@@ -1029,6 +1176,7 @@ export function createTempleAndFortress() {
     gateGroup,
     doorL,
     doorR,
+    sallyPortDoors,
     brazierLights,
     wallHeight,
     wallWidth,

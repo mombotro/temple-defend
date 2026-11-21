@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { createTempleAndFortress, materials } from './models.js?v=2.7';
-import { Player } from './player.js?v=2.7';
-import { EnemyManager } from './enemies.js?v=2.7';
-import { CombatSystem } from './combat.js?v=2.7';
-import { AlliedForces } from './allies.js?v=2.7';
-import { UIManager } from './ui.js?v=2.7';
-import { soundEngine } from './audio.js?v=2.7';
+import { createTempleAndFortress, materials } from './models.js?v=2.8';
+import { Player } from './player.js?v=2.8';
+import { EnemyManager } from './enemies.js?v=2.8';
+import { CombatSystem } from './combat.js?v=2.8';
+import { AlliedForces } from './allies.js?v=2.8';
+import { UIManager } from './ui.js?v=2.8';
+import { soundEngine } from './audio.js?v=2.8';
 
 class Game {
   constructor() {
@@ -46,6 +46,9 @@ class Game {
     this.setupFortress();
 
     this.player = new Player(this.scene, this.camera, this.canvas);
+    if (this.sallyPortDoors) {
+      this.player.setSallyPortDoors(this.sallyPortDoors);
+    }
     this.enemies = new EnemyManager(this.scene, this.player, this.fortressGroup);
     this.allies = new AlliedForces(this.scene, this.enemies);
     this.combat = new CombatSystem(this.scene, this.camera, this.player, this.enemies);
@@ -132,6 +135,7 @@ class Game {
     this.fortressGroup = templeObj.fortressGroup;
     this.gateGroup = templeObj.gateGroup;
     this.brazierLights = templeObj.brazierLights;
+    this.sallyPortDoors = templeObj.sallyPortDoors;
     this.scene.add(this.fortressGroup);
   }
 

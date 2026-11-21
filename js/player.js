@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { createRomanCenturion } from './models.js?v=2.7';
-import { soundEngine } from './audio.js?v=2.7';
+import { createRomanCenturion } from './models.js?v=2.8';
+import { soundEngine } from './audio.js?v=2.8';
 
 export class Player {
   constructor(scene, camera, domElement) {
@@ -43,10 +43,16 @@ export class Player {
 
     // Solid obstacles on ground level (AABB boxes that block movement)
     this.groundObstacles = [
-      // Left stone wall (leaves [-2.2, 2.2] clear for central gate passageway)
-      { minX: -42.5, maxX: -2.2, minZ: -2.4, maxZ: 2.4 },
-      // Right stone wall
-      { minX: 2.2, maxX: 42.5, minZ: -2.4, maxZ: 2.4 },
+      // Left stone wall segments (openings at Door L2 at -32 and Door L1 at -20)
+      { minX: -42.5, maxX: -33.1, minZ: -2.4, maxZ: 2.4 },
+      { minX: -30.9, maxX: -21.1, minZ: -2.4, maxZ: 2.4 },
+      { minX: -18.9, maxX: -2.2,  minZ: -2.4, maxZ: 2.4 },
+
+      // Right stone wall segments (openings at Door R1 at 20 and Door R2 at 32)
+      { minX: 2.2,   maxX: 18.9,  minZ: -2.4, maxZ: 2.4 },
+      { minX: 21.1,  maxX: 30.9,  minZ: -2.4, maxZ: 2.4 },
+      { minX: 33.1,  maxX: 42.5,  minZ: -2.4, maxZ: 2.4 },
+
       // Gate left bastion tower
       { minX: -12.2, maxX: -3.8, minZ: -4.2, maxZ: 4.2 },
       // Gate right bastion tower
@@ -58,6 +64,8 @@ export class Player {
       // Temple Sanctuary Cella (solid marble building behind wall)
       { minX: -9.5, maxX: 9.5, minZ: -44.0, maxZ: -22.0 }
     ];
+
+    this.sallyPortDoors = [];
 
     // Input States
     this.keys = {
@@ -466,6 +474,7 @@ export class Player {
         let testX = newX;
         const dx = newX - this.position.x;
         for (const obs of this.groundObstacles) {
+          if (obs.disabled) continue;
           if (this.position.z > obs.minZ - r && this.position.z < obs.maxZ + r) {
             if (testX > obs.minX - r && testX < obs.maxX + r) {
               if (dx > 0) {
@@ -486,6 +495,7 @@ export class Player {
         let testZ = newZ;
         const dz = newZ - this.position.z;
         for (const obs of this.groundObstacles) {
+          if (obs.disabled) continue;
           if (newX > obs.minX - r && newX < obs.maxX + r) {
             if (testZ > obs.minZ - r && testZ < obs.maxZ + r) {
               if (dz > 0) {
@@ -539,8 +549,45 @@ export class Player {
     return 0.0;
   }
 
+  setSallyPortDoors(doors) {
+    this.sallyPortDoors = doors || [];
+    this.sallyPortDoors.forEach(door => {
+      if (door.obstacle && !this.groundObstacles.includes(door.obstacle)) {
+        this.groundObstacles.push(door.obstacle);
+      }
+    });
+  }
+
   // --- MAIN UPDATE LOOP ---
   update(delta) {
+    // 0. Update Sally Port Side Doors (Automatic Proximity Detection & Opening)
+    if (this.sallyPortDoors && this.sallyPortDoors.length > 0) {
+      this.sallyPortDoors.forEach(door => {
+        const dx = this.position.x - door.x;
+        const dz = this.position.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+
+        // Open when player approaches within 3.6m on ground level (y < 4.0)
+        const shouldOpen = (dist < 3.6 && this.position.y < 4.0);
+
+        if (shouldOpen && !door.isOpen) {
+          door.isOpen = true;
+          soundEngine.playDoorOpen();
+        } else if (!shouldOpen && door.isOpen && dist > 5.0) {
+          door.isOpen = false;
+          soundEngine.playDoorClose();
+        }
+
+        // Animate door hinge rotation smoothly
+        const targetOpenProgress = door.isOpen ? 1.0 : 0.0;
+        door.openProgress = THREE.MathUtils.lerp(door.openProgress, targetOpenProgress, 6 * delta);
+        door.pivot.rotation.y = door.openProgress * door.targetAngle;
+
+        // Toggle collision obstacle: open door lets player pass through wall!
+        door.obstacle.disabled = door.openProgress > 0.65;
+      });
+    }
+
     // 1. Cooldowns & Timers
     ['arrows', 'testudo', 'warcry'].forEach(cmd => {
       if (this.cooldowns[cmd] > 0) {

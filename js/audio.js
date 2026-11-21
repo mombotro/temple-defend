@@ -320,6 +320,75 @@ class SoundEngine {
     osc.stop(t + 0.4);
   }
 
+  // Sally Port Heavy Oak Door Creak / Open
+  playDoorOpen() {
+    if (!this.initialized || this.isMuted) return;
+    this.resume();
+
+    const t = this.ctx.currentTime;
+    // 1. Low creaking wood resonance
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(80, t);
+    osc.frequency.linearRampToValueAtTime(140, t + 0.15);
+    osc.frequency.linearRampToValueAtTime(110, t + 0.35);
+    gain.gain.setValueAtTime(0.25, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(t);
+    osc.stop(t + 0.45);
+
+    // 2. High iron hinge friction squeak
+    const hingeOsc = this.ctx.createOscillator();
+    const hingeGain = this.ctx.createGain();
+    hingeOsc.type = 'triangle';
+    hingeOsc.frequency.setValueAtTime(480, t);
+    hingeOsc.frequency.linearRampToValueAtTime(620, t + 0.2);
+    hingeOsc.frequency.linearRampToValueAtTime(390, t + 0.4);
+    hingeGain.gain.setValueAtTime(0.12, t);
+    hingeGain.gain.exponentialRampToValueAtTime(0.001, t + 0.42);
+    hingeOsc.connect(hingeGain);
+    hingeGain.connect(this.sfxGain);
+    hingeOsc.start(t);
+    hingeOsc.stop(t + 0.42);
+  }
+
+  // Sally Port Heavy Door Slam / Lock
+  playDoorClose() {
+    if (!this.initialized || this.isMuted) return;
+    this.resume();
+
+    const t = this.ctx.currentTime;
+    // 1. Heavy wooden thud
+    const thudOsc = this.ctx.createOscillator();
+    const thudGain = this.ctx.createGain();
+    thudOsc.type = 'triangle';
+    thudOsc.frequency.setValueAtTime(120, t);
+    thudOsc.frequency.exponentialRampToValueAtTime(35, t + 0.25);
+    thudGain.gain.setValueAtTime(0.45, t);
+    thudGain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    thudOsc.connect(thudGain);
+    thudGain.connect(this.sfxGain);
+    thudOsc.start(t);
+    thudOsc.stop(t + 0.3);
+
+    // 2. Iron latch click
+    const clickOsc = this.ctx.createOscillator();
+    const clickGain = this.ctx.createGain();
+    clickOsc.type = 'square';
+    clickOsc.frequency.setValueAtTime(750, t + 0.08);
+    clickOsc.frequency.exponentialRampToValueAtTime(220, t + 0.18);
+    clickGain.gain.setValueAtTime(0.0, t);
+    clickGain.gain.setValueAtTime(0.3, t + 0.08);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    clickOsc.connect(clickGain);
+    clickGain.connect(this.sfxGain);
+    clickOsc.start(t + 0.08);
+    clickOsc.stop(t + 0.22);
+  }
+
   // Victory Fanfare
   playVictory() {
     if (!this.initialized || this.isMuted) return;
